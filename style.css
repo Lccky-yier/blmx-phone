@@ -1,4 +1,4 @@
-
+	
 		@import url('https://fontsapi.zeoseven.com/3/main/result.css');
 		@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css');
 		
@@ -1353,8 +1353,8 @@
 		}
 		
 		.message-row .message-bubble.image-url-bubble img {
-			max-width: 20rem;
-			max-height: 20rem;
+			max-width: 15rem;
+			max-height: 15rem;
 			display: block;
 			border-radius: 0.5rem;
 		}
@@ -2849,12 +2849,10 @@
 			background-color: var(--list-item-hover-bg);
 		}
 		
-		/* vvvvvvvv 新增：为上下文菜单项添加分隔线 vvvvvvvv */
 		.context-menu-item:not(:last-child) {
 			border-bottom: 1px solid var(--list-item-hover-bg);
 		}
 		
-		/* ^^^^^^^^^^ 新增代码到此结束 ^^^^^^^^^^ */
 		#group-chat-modal,
 		#group-owner-modal {
 			position: absolute;
@@ -2963,7 +2961,6 @@
 			overflow-y: auto;
 			padding: 1rem;
 			box-sizing: border-box;
-			/* [FIX] Prevent padding from breaking layout */
 		}
 		
 		.group-member-grid {
@@ -3057,8 +3054,6 @@
 		}
 		
 		/* 自定义弹窗样式 */
-		
-		/* vvvvvvvv 新增：统一弹窗输入框样式 vvvvvvvv */
 		#custom-dialog-box input[type="text"],
 		#custom-dialog-box textarea {
 			background-color: var(--input-field-bg);
@@ -3077,9 +3072,6 @@
 			border-color: var(--wechat-green-icon);
 		}
 		
-		/* ^^^^^^^^^^ 新增代码到此结束 ^^^^^^^^^^ */
-		
-		/* vvvvvvvv 新增：将通用弹窗样式移入CSS vvvvvvvv */
 		#custom-dialog-modal #custom-dialog-box {
 			background-color: var(--card-bg-primary);
 			color: var(--text-color-secondary);
@@ -3096,8 +3088,6 @@
 			font-size: 0.9rem;
 		}
 		
-		/* ^^^^^^^^^^ 新增代码到此结束 ^^^^^^^^^^ */
-		
 		#custom-dialog-modal button {
 			padding: 0.6rem 1rem;
 			border: none;
@@ -3113,22 +3103,16 @@
 			transform: scale(0.95);
 		}
 		
-		/* vvvvvvvv 替换：修复并统一自定义弹窗按钮颜色 vvvvvvvv */
 		#custom-dialog-modal button.primary {
 			background-color: var(--wechat-green-icon);
-			/* 核心修改：统一使用全局设计中的可配置颜色 */
 			color: var(--text-color-inverted);
 		}
 		
 		#custom-dialog-modal button.secondary {
 			background-color: var(--wechat-green-icon);
-			/* 核心修改：统一使用全局设计中的可配置颜色 */
 			color: var(--text-color-inverted);
 			border: none;
-			/* 核心修改：移除次要按钮的边框，确保外观完全一致 */
 		}
-		
-		/* ^^^^^^^^^^ 替换代码到此结束 ^^^^^^^^^^ */
 		
 		/* 1. 彻底移除特殊气泡的伪元素 (装饰层/小尖角) */
 		.message-bubble.sticker-bubble::before,
@@ -3169,25 +3153,19 @@
 			padding: 0 !important;
 		}
 		
-		/* --- 新增：用于删除模式的 Flexbox 布局 --- */
 		.panel-view.delete-mode-active {
 			display: flex;
 			flex-direction: column;
-			/* 确保它填满父容器的高度 */
 			height: 100%;
 		}
 		
 		.panel-view.delete-mode-active .features-grid {
-			/* 关键：让表情网格占据所有剩余空间 */
 			flex-grow: 1;
-			/* 关键：让网格本身成为滚动容器 */
 			overflow-y: auto;
-			/* 移除之前为 sticky 布局留下的边距，以防万一 */
 			padding-bottom: 0;
 		}
 		
 		.panel-view.delete-mode-active .delete-confirm-bar {
-			/* 关键：让删除栏不收缩，保持其原始高度 */
 			flex-shrink: 0;
 		}
 		
@@ -3245,17 +3223,9 @@
 			padding: 1rem;
 		}
 		
-		/* vvvvvvvv 替换：微博分区容器布局 (V2 - 修复卡片自适应BUG) vvvvvvvv */
 		.weibo-zone-container {
-			/* 【核心修复】移除 display: flex 和 flex-direction: column。 */
-			/* 现在它是一个标准的块级容器，其子元素将自然垂直堆叠。 */
-			/* 【核心修复】移除了 gap: 1rem; 因为它只在flex/grid布局中生效。 */
-			/* 我们将在子元素上使用 margin-bottom 来创建间距。 */
 		}
 		
-		/* ^^^^^^^^^^ 替换代码到此结束 ^^^^^^^^^^ */
-		
-		/* vvvvvvvv 替换：微博分区卡片样式 (V2 - 增加外边距) vvvvvvvv */
 		.weibo-zone-card {
 			height: 3rem;
 			border-radius: 1rem;
@@ -3269,11 +3239,8 @@
 			display: flex;
 			flex-direction: column;
 			justify-content: center;
-			/* 【核心修复】新增 margin-bottom 来替代之前容器上的 gap 属性。 */
 			margin-bottom: 0.8rem;
 		}
-		
-		/* ^^^^^^^^^^ 替换代码到此结束 ^^^^^^^^^^ */
 		
 		.weibo-zone-card:hover {
 			transform: scale(1.03);
@@ -3394,8 +3361,6 @@
 			border-radius: 0.5rem;
 		}
 		
-		/* vvvvvvvv 替换：微博图片描述滚动问题修复 vvvvvvvv */
-		
 		.weibo-image-description {
 			position: relative;
 			z-index: 2;
@@ -3412,15 +3377,11 @@
 			border-radius: 0.5rem;
 			border: 1px solid var(--divider-color-primary);
 			display: flex;
-			/* 修改：将垂直对齐方式从“居中”改为“顶部对齐” */
 			align-items: flex-start;
-			/* 移除：不再需要水平居中，text-align:center 已完成该工作 */
-			/* justify-content: center; */
 			margin-left: auto;
 			margin-right: auto;
 		}
-		
-		/* ^^^^^^^^^^ 替换代码到此结束 ^^^^^^^^^^ */
+
 		
 		.weibo-comments-section {
 			background-color: var(--weibo-full-content-bg);
@@ -3492,10 +3453,7 @@
 			color: var(--weibo-comment-author-color);
 		}
 		
-		/* vvvvvvvv 替换：微博“盖楼”视觉样式（V4.1 - 修复显示不全BUG） vvvvvvvv */
-		
 		.weibo-comment-replies {
-			/* 这个容器只负责包裹，不再有任何背景或边框 */
 			margin-top: 0.75rem;
 		}
 		
@@ -3513,11 +3471,9 @@
 		}
 		
 		.weibo-comment-replies.visible {
-			/* 移除max-height和opacity，因为显隐由JS直接控制 */
 		}
 		
 		.weibo-reply+.weibo-reply {
-			/* 关键修正：移除 margin-top，完全使用 padding-top 和 border-top 来控制间距 */
 			padding-top: 0.8rem;
 			border-top: 1px solid var(--weibo-comment-reply-divider);
 		}
@@ -3532,8 +3488,6 @@
 			cursor: pointer;
 		}
 		
-		/* ^^^^^^^^^^ 替换代码到此结束 ^^^^^^^^^^ */
-		
 		.weibo-comment-input-area {
 			flex-shrink: 0;
 			display: flex;
@@ -3544,7 +3498,6 @@
 			border-top: 1px solid var(--weibo-comment-input-area-border);
 		}
 		
-		/* vvvvvvvv 替换：微博评论输入框样式 (修复Flexbox溢出问题) vvvvvvvv */
 		.weibo-comment-input {
 			flex-grow: 1;
 			border: none;
@@ -3552,20 +3505,12 @@
 			padding: 0.6rem 0.8rem;
 			border-radius: 1rem;
 			font-size: 0.9em;
-			/* 【核心修复】新增 min-width: 0; 
-	   这是一个关键的Flexbox技巧，它允许这个设置了 flex-grow: 1 的元素
-	   在空间不足时，能够被压缩到比其默认最小宽度更小的尺寸，
-	   从而防止它把旁边的兄弟元素挤出容器。*/
 			min-width: 0;
 		}
-		
-		/* ^^^^^^^^^^ 替换代码到此结束 ^^^^^^^^^^ */
-		
+
 		.weibo-comment-input:focus {
 			outline: none;
 		}
-		
-		/* vvvvvvvv 替换：微博发送评论按钮样式 (修复竖排及对齐) vvvvvvvv */
 		
 		.weibo-send-comment-btn {
 			border: none;
@@ -3578,13 +3523,8 @@
 			cursor: pointer;
 			white-space: nowrap;
 			flex-shrink: 0;
-			/* 【核心修复】禁止此按钮被压缩 */
 		}
-		
-		/* ^^^^^^^^^^ 替换代码到此结束 ^^^^^^^^^^ */
-		
-		.
-		/* vvvvvvvv 替换：微博标题背景色相关的全部CSS (V3.1 - 最终修复版) vvvvvvvv */
+
 		
 		.weibo-full-title,
 		.weibo-detail-title,
@@ -3594,12 +3534,9 @@
 			transition: background-color 0.3s ease;
 			display: inline-block;
 			width: auto;
-			/* 核心修改1：让背景色优先使用CSS变量，如果变量不存在，则保持透明 */
 			background-color: var(--title-bg-color, transparent);
 		}
 		
-		/* 核心修改2：恢复所有默认分区的背景色和文字样式规则，确保它们能正常工作 */
-		/* 并且将文字颜色和阴影的规则直接合并到这里，提高优先级 */
 		.title-bg-news,
 		.title-bg-life,
 		.title-bg-romance,
@@ -3634,19 +3571,14 @@
 			background-color: var(--weibo-adult-bg);
 		}
 		
-		/* 核心修改3：为自定义颜色（通过变量设置）的标题也应用同样的白色字体和阴影 */
-		/* 使用 [style*="--title-bg-color"] 这个高优先级的选择器来确保样式被应用 */
 		.weibo-full-title[style*="--title-bg-color"],
 		.weibo-detail-title[style*="--title-bg-color"],
 		.weibo-post-card .weibo-post-title[style*="--title-bg-color"] {
 			color: var(--text-color-inverted) !important;
 			text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
-			/* 【关键修复】再次明确声明背景色，确保它覆盖所有其他规则 */
 			background-color: var(--title-bg-color);
 		}
-		
-		/* ^^^^^^^^^^ 替换代码到此结束 ^^^^^^^^^^ */
-		
+
 		.weibo-body,
 		.weibo-image-description,
 		.weibo-comments-section,
@@ -3670,10 +3602,6 @@
 			/* 按钮之间的间距 */
 		}
 		
-		/* ^^^^^^^^^^ 替换代码到此结束 ^^^^^^^^^^ */
-		
-		/* vvvvvvvv 新增：微博分区状态指示器样式 vvvvvvvv */
-		
 		.zone-status-indicator {
 			position: absolute;
 			top: 0.8rem;
@@ -3682,22 +3610,15 @@
 			color: rgba(255, 255, 255, 0.85);
 			text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
 			opacity: 0;
-			/* 默认隐藏 */
 			transform: scale(0.8) rotate(-15deg);
 			transition: opacity 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 			pointer-events: none;
-			/* 确保不影响点击 */
 		}
 		
-		/* 当有帖子时，添加这个 class 来显示图标 */
 		.zone-status-indicator.visible {
 			opacity: 1;
 			transform: scale(1) rotate(0deg);
 		}
-		
-		/* ^^^^^^^^^^ 新增代码到此结束 ^^^^^^^^^^ */
-		
-		/* vvvvvvvv 新增：微博角色发帖弹窗专属样式 (莫兰迪色系) vvvvvvvv */
 		
 		#weibo-post-author-modal {
 			position: absolute;
@@ -5376,7 +5297,6 @@
 		
 		/* --- 3. 左侧/顶部：用户信息面板 --- */
 		.forum-user-panel {
-			/* 【核心修改】宽度从 25% 调整为 20% */
 			width: 20%;
 			flex-shrink: 0;
 			display: flex;
