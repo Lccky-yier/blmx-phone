@@ -8115,14 +8115,14 @@
 			background-color: var(--view-bg-primary);
 			padding: 2rem 1rem;
 		}
-
+		
 		.check-phone-grid {
 			display: grid;
 			grid-template-columns: repeat(3, 1fr);
 			column-gap: 1rem;
 			row-gap: 1.5rem;
 		}
-
+		
 		.cp-app-item {
 			display: flex;
 			flex-direction: column;
@@ -8130,7 +8130,7 @@
 			cursor: pointer;
 			text-align: center;
 		}
-
+		
 		.cp-app-icon {
 			width: 3.5rem;
 			height: 3.5rem;
@@ -8155,19 +8155,19 @@
 			color: var(--text-color-primary);
 			font-weight: 500;
 		}
-
+		
 		.icon-cp-gallery {
 			background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%);
 		}
-
+		
 		.icon-cp-footprints {
 			background: linear-gradient(135deg, #56AB2F 0%, #A8E063 100%);
 		}
-
+		
 		.icon-cp-shopping {
 			background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%);
 		}
-
+		
 		/* --- 足迹 APP 专属样式 (主题适配版) --- */
 		
 		/* 1. 地图头部 */
@@ -8216,7 +8216,7 @@
 			display: flex;
 			flex-direction: column;
 			align-items: center;
-			z-index: 100;
+			z-index: 10;
 			/* 保证在最上层 */
 			pointer-events: none;
 			/* 让它不影响点击下面的地图 */
@@ -8225,8 +8225,7 @@
 		/* 红色选中圈圈 (椭圆光环) */
 		.fp-realtime-ring {
 			position: absolute;
-			bottom: 12px;
-			/* 位于图标下方 */
+			top: 28px;
 			width: 24px;
 			height: 10px;
 			border: 2px solid #E14438;
@@ -8258,6 +8257,7 @@
 			border: 1px solid rgba(225, 68, 56, 0.3);
 			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 			white-space: nowrap;
+			margin-top: 12px;
 		}
 		
 		/* 呼吸动画 */
