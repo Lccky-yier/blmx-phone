@@ -1270,6 +1270,7 @@ ${vGroupListText}
 				listenTogether: document.getElementById('listen-together-view'),
 				hiddenAlbum: document.getElementById('cp-hidden-album-view'),
 				trashBin: document.getElementById('cp-trash-bin-view'),
+				shoppingProfile: document.getElementById('cp-shopping-profile-view'),
 				shopping: document.getElementById('cp-shopping-view'),
 				shoppingHome: document.getElementById('cp-shopping-home-view')
 			};
@@ -12113,6 +12114,22 @@ TAOBAO_SEARCH:{"keyword":"${keyword}","items":[{"title":"商品1标题...","pric
 `.trim();
 			}
 			
+			function renderShoppingProfile() {
+				const charId = currentCheckPhoneTargetId;
+				if (!charId) return;
+				
+				// 获取角色信息
+				const contact = contacts.find(c => c.id === charId);
+				const name = contact ? (contact.remark || contact.name) : '淘宝用户';
+				const avatar = contact ? contact.avatar : 'https://files.catbox.moe/bialj8.jpeg';
+				
+				// 填充顶部卡片
+				document.getElementById('tb-user-name').textContent = name;
+				document.getElementById('tb-user-avatar').src = avatar;
+				
+				// (后续可以在这里添加 AI 生成的逻辑，现在先静态显示)
+			}
+			
 			function setupEventListeners() {
 				
 				// --- 查手机 APP 入口逻辑 (修复版 - 使用日记弹窗) ---
@@ -12240,6 +12257,46 @@ TAOBAO_SEARCH:{"keyword":"${keyword}","items":[{"title":"商品1标题...","pric
 					navigateTo('checkPhone');
 				});
 				
+				// --- 淘宝“我的”页面导航逻辑 ---
+				
+				// 1. 从【首页】点“我的淘宝”
+				const navToProfile = document.getElementById('nav-to-profile');
+				if (navToProfile) {
+					navToProfile.addEventListener('click', () => {
+						navigateTo('shoppingProfile');
+						renderShoppingProfile(); // 立即渲染基础信息
+					});
+				}
+				
+				// 2. 从【购物车】点“我的淘宝”
+				const navToProfileFromCart = document.getElementById('nav-to-profile-from-cart');
+				if (navToProfileFromCart) {
+					navToProfileFromCart.addEventListener('click', () => {
+						navigateTo('shoppingProfile');
+						renderShoppingProfile();
+					});
+				}
+				
+				// 3. 从【我的】点“首页”
+				const navToHomeFromProfile = document.getElementById('nav-to-home-from-profile');
+				if (navToHomeFromProfile) {
+					navToHomeFromProfile.addEventListener('click', () => {
+						navigateTo('shoppingHome');
+					});
+				}
+				
+				// 4. 从【我的】点“购物车”
+				const navToCartFromProfile = document.getElementById('nav-to-cart-from-profile');
+				if (navToCartFromProfile) {
+					navToCartFromProfile.addEventListener('click', () => {
+						// 跳转并渲染购物车
+						const charId = currentCheckPhoneTargetId;
+						if (charId) {
+							navigateTo('shopping');
+							renderShoppingApp(charId);
+						}
+					});
+				}
 				// --- 足迹 APP 内部按钮 ---
 				// 返回按钮
 				document.getElementById('cp-footprints-back-btn').addEventListener('click', () => {
@@ -18337,4 +18394,3 @@ AMA_PAIR:{"question":"这里是匿名用户提出的问题内容","answer":"这�
 			a.click();
 			document.body.removeChild(a);
 		};
-	
