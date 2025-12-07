@@ -1,4 +1,4 @@
-	
+
 		/* vvvvvvvv 新增：气泡工坊 - 用于暂存样式的状态管理器 vvvvvvvv */
 		
 		// 创建一个全局对象，用于存储气泡工坊的临时状态和原始值
@@ -2614,7 +2614,8 @@ Now, please begin.
 			/* vvvvvvvv 替换：addMessageToWeChat 函数 (V19 - 最终版，集成高级CSS注入) vvvvvvvv */
 			function addMessageToWeChat(entry, index) {
 				const { id, sender, type, data } = entry;
-				const from = (sender === 'user' || sender === '{{user}}') ? 'me' : 'them';
+				const from = (sender === 'user' || sender === '{{user}}' || sender === userProfile.name) ? 'me' : 'them';
+				
 				const convoId = entry.convoId || entry.conversationId;
 				const conversation = conversations.find(c => c.id === convoId);
 				
@@ -18949,4 +18950,3 @@ AMA_PAIR:{"question":"这里是匿名用户提出的问题内容","answer":"这�
 			a.click();
 			document.body.removeChild(a);
 		};
-	
