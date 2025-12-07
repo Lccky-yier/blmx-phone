@@ -1,4 +1,4 @@
-
+	
 		/* vvvvvvvv 新增：气泡工坊 - 用于暂存样式的状态管理器 vvvvvvvv */
 		
 		// 创建一个全局对象，用于存储气泡工坊的临时状态和原始值
@@ -205,6 +205,10 @@
 				if (entry.type === 'shopping_update') {
 					return `SHOPPING_UPDATE:${JSON.stringify(entry.content)}`;
 				}
+				
+				if (entry.type === 'taobao_home') {
+					return `TAOBAO_HOME:${JSON.stringify(entry.content)}`;
+				}
 				if (entry.type === 'gallery_update') {
 					return `GALLERY_UPDATE:${JSON.stringify(entry.content)}`;
 				}
@@ -265,6 +269,9 @@
 						break;
 					case 'payment_receipt':
 						contentStr = `[payment_receipt: ${typeof entry.content === 'string' ? entry.content : JSON.stringify(entry.content)}]`;
+						break;
+					case 'product_share':
+						contentStr = `[product_share: ${JSON.stringify(entry.content)}]`;
 						break;
 					case 'red_packet':
 						contentStr = `[red_packet: ${JSON.stringify(entry.content)}]`;
@@ -378,6 +385,7 @@
 							const redPacketMatch = contentPart.match(/^\[red_packet:\s*(.+)\]$/);
 							const forwardMatch = contentPart.match(/^\[forward:\s*(.+)\]$/);
 							const paymentMatch = contentPart.match(/^\[payment_receipt:\s*(.+)\]$/);
+							const productShareMatch = contentPart.match(/^\[product_share:\s*(.+)\]$/);
 							
 							if (stickerMatch) {
 								entry.type = 'sticker';
@@ -413,6 +421,15 @@
 								} catch (e) {
 									entry.content = {};
 								}
+							} else if (productShareMatch) {
+								entry.type = 'product_share';
+								try {
+									entry.content = JSON.parse(productShareMatch[1]);
+								} catch (e) {
+									console.error("商品卡片解析失败", e);
+									entry.type = 'message';
+									entry.content = contentPart;
+								}
 							} else if (redPacketMatch) {
 								entry.type = 'red_packet';
 								entry.content = JSON.parse(redPacketMatch[1]);
@@ -440,7 +457,8 @@
 								'MUSIC_SHARE', 'FOOTPRINTS', 'GALLERY_UPDATE',
 								'HIDDEN_ALBUM_UPDATE',
 								'TRASH_BIN_UPDATE',
-								'SHOPPING_UPDATE'
+								'SHOPPING_UPDATE',
+								'TAOBAO_HOME' // <--- 【在这里添加】
 							];
 							
 							if (systemCommands.includes(key)) {
@@ -488,6 +506,12 @@
 								} else if (key === 'SHOPPING_UPDATE') {
 									Object.assign(entry, {
 										type: 'shopping_update',
+										author: data.author,
+										content: data
+									});
+								} else if (key === 'TAOBAO_HOME') {
+									Object.assign(entry, {
+										type: 'taobao_home',
 										author: data.author,
 										content: data
 									});
@@ -1172,6 +1196,14 @@ ${vGroupListText}
 						renderShoppingApp(currentCheckPhoneTargetId);
 					}
 				}
+				// [新增] 淘宝首页刷新
+				else if (type === 'shopping_home') {
+					const view = document.getElementById('cp-shopping-home-view');
+					if (view.classList.contains('active')) {
+						// 注意：这里需要确保 currentCheckPhoneTargetId 有值
+						renderShoppingHome(currentCheckPhoneTargetId);
+					}
+				}
 			}
 			
 			/* vvvvvvvv 替换：微博默认分区数据库 (V5 - 论坛体导语) vvvvvvvv */
@@ -1272,7 +1304,8 @@ ${vGroupListText}
 				trashBin: document.getElementById('cp-trash-bin-view'),
 				shoppingProfile: document.getElementById('cp-shopping-profile-view'),
 				shopping: document.getElementById('cp-shopping-view'),
-				shoppingHome: document.getElementById('cp-shopping-home-view')
+				shoppingHome: document.getElementById('cp-shopping-home-view'),
+				productDetail: document.getElementById('cp-product-detail-view')
 			};
 			/* ^^^^^^^^^^ 替换代码到此结束 ^^^^^^^^^^ */
 			
@@ -1290,16 +1323,14 @@ ${vGroupListText}
 				blmxManager = null;
 			let userMessageQueue = [];
 			let hasPendingNotifications = false;
-			/* vvvvvvvv 新增：用于修复UI实时渲染的全局刷新标记 vvvvvvvv */
 			let uiNeedsRefresh = false; // 全局标记，用于指示UI是否需要刷新
-			/* ^^^^^^^^^^ 新增代码到此结束 ^^^^^^^^^^ */
 			let drafts = {};
-			
+			let currentProductDetails = null; // 暂存当前详情页商品数据
 			let currentCharId = '';
 			let currentConversationId = null;
 			let currentMomentsAuthorId = null;
 			let currentCheckPhoneTargetId = null; // 存储当前正在查看谁的手机
-			
+			let searchTickerInterval = null; // 用于淘宝首页搜索词轮播
 			let contacts = [];
 			let conversations = [];
 			let userProfile = {
@@ -1315,18 +1346,13 @@ ${vGroupListText}
 				comments: {}, // 键是postId，值是该帖子的评论数组
 				likes: {} // 键是postId，值是该帖子的点赞者ID数组
 			};
-			/* vvvvvvvv 新增：视频通话功能的状态管理变量 vvvvvvvv */
 			let currentCallState = 'idle'; // 'idle', 'calling', 'incoming', 'in-call'
 			let callTimerInterval = null;
 			let callTimerSeconds = 0;
 			let callPartner = { id: null, name: null, avatar: null }; // 存储通话对象信息
-			/* ^^^^^^^^^^ 新增代码到此结束 ^^^^^^^^^^ */
-			/* vvvvvvvv 新增：虚拟群聊头像缓存 vvvvvvvv */
 			let vgroupAvatarCache = new Map();
-			/* ^^^^^^^^^^ 新增代码到此结束 ^^^^^^^^^^ */
-			/* vvvvvvvv 新增：一起听-会话历史记录存储 vvvvvvvv */
 			let currentMusicSessionLogs = []; // 存储结构: { sender: 'me'|'them', text: string, time: string }
-			/* ^^^^^^^^^^ 新增代码到此结束 ^^^^^^^^^^ */
+			
 			/* vvvvvvvv 新增：视频通话-画面历史记录核心逻辑 (V1) vvvvvvvv */
 			
 			// 1. 全局变量：存储画面历史
@@ -1787,8 +1813,6 @@ ${vGroupListText}
 					}
 				} else if (viewName === 'weibo') {
 					renderWeiboZones();
-					// 【核心修改】下面这行调用已被删除
-					// updateForumDmNotification(); 
 				} else if (viewName === 'weiboFeed') {
 					const feedTitleEl = document.getElementById('weibo-feed-title');
 					if (options && options.categoryName) {
@@ -1829,6 +1853,11 @@ ${vGroupListText}
 						await renderForumProfile(options.contactId);
 					} else {
 						console.error("[Navigate] 尝试导航到个人主页，但未提供 contactId。");
+					}
+				}
+				else if (viewName === 'shoppingHome') {
+					if (currentCheckPhoneTargetId) {
+						renderShoppingHome(currentCheckPhoneTargetId);
 					}
 				}
 			}
@@ -2886,6 +2915,32 @@ Now, please begin.
     `;
 						bubbleClasses = 'message-bubble shopping-receipt-bubble';
 						break;
+					case 'product_share':
+						const prodData = entry.content;
+						// 获取图片：如果是NAI描述则尝试获取缓存，否则用原图或占位
+						let prodImgUrl = prodData.image;
+						// 简单的判断，如果是纯描述且没有 http，尝试用占位符
+						if (prodImgUrl && !prodImgUrl.startsWith('http') && !prodImgUrl.startsWith('blob:')) {
+							// 这里简化处理：如果没有URL，就用默认图
+							prodImgUrl = 'https://files.catbox.moe/c41va3.jpg';
+						}
+						
+						bubbleHtml = `
+                    <div class="product-share-card" data-product='${JSON.stringify(prodData)}'>
+                        <div class="ps-content">
+                            <img src="${prodImgUrl}" class="ps-img">
+                            <div class="ps-info">
+                                <div class="ps-title">${prodData.title || '未知商品'}</div>
+                                <div class="ps-price">¥${prodData.price || '0.00'}</div>
+                            </div>
+                        </div>
+                        <div class="ps-footer">
+                            <i class="fab fa-taobao" style="color: #FF5000;"></i> 淘宝商品
+                        </div>
+                    </div>
+                `;
+						bubbleClasses += ' product-share-bubble';
+						break;
 					case 'red_packet':
 					{
 						const packetData = entry.content;
@@ -2961,18 +3016,6 @@ Now, please begin.
 				const bubble = document.createElement('div');
 				bubble.className = bubbleClasses;
 				bubble.innerHTML = bubbleHtml;
-				
-				// --- vvvv [核心新增] 实装高级CSS vvvv ---
-				// 这段代码负责读取你存在变量里的代码，并贴到气泡上
-				const targetSide = from === 'me' ? 'me' : 'them';
-				const advancedCss = getComputedStyle(document.documentElement).getPropertyValue(`--bubble-${targetSide}-advanced-css`).trim();
-				if (advancedCss) {
-					// 使用 cssText 追加样式，确保生效且不覆盖已有的 class 样式
-					// 这里的 ';' 是为了防止前面的属性没闭合
-					bubble.style.cssText += ';' + advancedCss;
-				}
-				// --- ^^^^ [核心新增] 结束 ^^^^ ---
-				
 				contentWrapper.appendChild(bubble);
 				
 				const forwardCheckbox = document.createElement('input');
@@ -3229,6 +3272,15 @@ Now, please begin.
 								}
 							}, 300);
 						}
+					});
+				}
+				if (type === 'product_share') {
+					const card = bubble.querySelector('.product-share-card');
+					card.addEventListener('click', () => {
+						const pData = JSON.parse(card.dataset.product);
+						// 模拟跳转回商品详情页
+						navigateTo('productDetail');
+						renderProductDetail(pData);
 					});
 				}
 				wechatBody.appendChild(messageRow);
@@ -11163,7 +11215,25 @@ FOOTPRINTS:{"author":"${charId}","date":"${dateStr}","current_location":"家中�
 				if (latestEntry) {
 					renderFootprintsData(latestEntry.content);
 				} else {
-					triggerFootprintsGeneration(charId);
+					// [修改] 不再自动触发，而是显示手动按钮
+					const listContainer = document.getElementById('cp-footprints-list');
+					// 清空地图上的标记
+					document.querySelector('.fp-map-header').innerHTML = '';
+					
+					listContainer.innerHTML = `
+<div style="height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; color:var(--text-color-tertiary); gap:1rem; margin-top:3rem;">
+	<i class="fas fa-shoe-prints" style="font-size:3rem; opacity:0.3;"></i>
+	<p style="margin:0;">今日暂无足迹</p>
+	<button id="manual-gen-footprints-btn" class="studio-btn primary" style="font-size:0.85em; padding:0.4rem 1rem;">
+		<i class="fas fa-satellite-dish"></i> 生成今日轨迹
+	</button>
+</div>
+`;
+					// 绑定点击事件
+					const btn = document.getElementById('manual-gen-footprints-btn');
+					if (btn) {
+						btn.addEventListener('click', () => triggerFootprintsGeneration(charId));
+					}
 				}
 			}
 			
@@ -11696,7 +11766,7 @@ TRASH_BIN_UPDATE:{"author":"${charId}","items":[{"image":"废弃内容1的画面
 				return `
 [任务: 生成手机购物车内容]
 角色: ${name} (ID: ${charId})。
-场景: 这是 ${name} 的淘宝购物车。请根据角色性格、近期剧情和内心隐藏的欲望，生成 **3-5个** 待购商品。
+场景: 这是 ${name} 的淘宝购物车。请根据角色性格、近期剧情和内心隐藏的欲望，生成 **3-4个** 待购商品。
 
 【商品要求】
 1. **店铺名 (shopName)**: 必须像真实的淘宝店铺名，如"xx旗舰店"、"xx代购"、"xx的手作铺"。
@@ -11733,7 +11803,6 @@ SHOPPING_UPDATE:{"author":"${charId}","items":[{"shopName":"店铺A","title":"�
 					const rawResponse = await tavernGenerateFunc({ user_input: prompt, should_stream: false });
 					latestAiRawResponse = rawResponse.trim();
 					
-					// 使用通用的解析器处理 (会自动调用 processEntryWithNAI 处理图片)
 					if (latestAiRawResponse) {
 						await parseAndHandleAiResponse(latestAiRawResponse);
 					} else {
@@ -11749,6 +11818,154 @@ SHOPPING_UPDATE:{"author":"${charId}","items":[{"shopName":"店铺A","title":"�
 				}
 			}
 			
+			async function handleAddToShoppingCart() {
+				if (!currentProductDetails) return;
+				const charId = currentCheckPhoneTargetId;
+				if (!charId) return;
+				
+				// 1. 构造新商品对象
+				const newItem = {
+					shopName: currentProductDetails.shop || "未知店铺",
+					title: currentProductDetails.title,
+					price: currentProductDetails.price,
+					image: currentProductDetails.image, // 这里存的是描述或URL
+					note: "从详情页加购",
+					reason: "种草",
+					addedAt: Date.now() // 加个时间戳防重
+				};
+				
+				// 2. 查找该角色最新的购物车记录
+				let latestEntry = [...blmxManager.logEntries].reverse().find(e =>
+					e.type === 'shopping_update' && e.author === charId
+				);
+				
+				let newItemsList = [];
+				if (latestEntry && latestEntry.content && latestEntry.content.items) {
+					newItemsList = [...latestEntry.content.items];
+				}
+				
+				// 3. 追加新商品
+				newItemsList.unshift(newItem); // 加到最前面
+				
+				// --- [新增] 删除旧记录，本地只保留一条 ---
+				blmxManager.logEntries = blmxManager.logEntries.filter(e =>
+					!(e.type === 'shopping_update' && e.author === charId)
+				);
+				
+				// 4. 创建新的日志条目 (shopping_update)
+				const newEntryId = `msg-shopping-update-${Date.now()}`;
+				const updateData = {
+					author: charId,
+					items: newItemsList
+				};
+				
+				blmxManager.addEntry({
+					id: newEntryId,
+					type: 'shopping_update',
+					author: charId,
+					content: updateData,
+					timestamp: new Date(window.currentGameDate).toISOString()
+				});
+				
+				// 5. 保存并提示
+				await blmxManager.persistLogToStorage();
+				await showDialog({ mode: 'alert', text: '已成功加入购物车！' });
+			}
+			
+			/**
+			 * 处理购物车的“管理”按钮点击
+			 */
+			async function handleShoppingManage() {
+				const view = document.getElementById('cp-shopping-view');
+				const manageBtn = document.getElementById('cp-shopping-manage-btn');
+				const footerLeft = view.querySelector('.sp-footer-left');
+				const footerRight = view.querySelector('.sp-footer-right');
+				
+				const isEditMode = manageBtn.textContent === '完成';
+				
+				if (isEditMode) {
+					// --- 退出编辑模式 ---
+					manageBtn.textContent = '管理';
+					manageBtn.style.color = '';
+					
+					// 恢复底部栏为“结算”状态
+					footerLeft.style.display = 'flex';
+					footerRight.innerHTML = `
+<div class="sp-total-price">合计: <span>¥0.00</span></div>
+<button class="sp-checkout-btn">帮TA清空</button>
+`;
+					// 重新绑定结算事件 (因为 innerHTML 重置了)
+					const charId = currentCheckPhoneTargetId;
+					const latestEntry = [...blmxManager.logEntries].reverse().find(e =>
+						e.type === 'shopping_update' && e.author === charId
+					);
+					view.querySelector('.sp-checkout-btn').onclick = () => handleShoppingCheckout(charId, latestEntry ? latestEntry.id : null);
+					
+					// 取消所有勾选
+					view.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = false);
+					
+				} else {
+					// --- 进入编辑模式 ---
+					manageBtn.textContent = '完成';
+					manageBtn.style.color = 'var(--tb-primary-orange)';
+					
+					// 修改底部栏为“删除”状态
+					footerLeft.style.display = 'flex'; // 全选保留
+					footerRight.innerHTML = `
+<button class="sp-delete-btn" style="border:1px solid #ff4d4f; color:#ff4d4f; background:transparent; border-radius:20px; padding:0.4rem 1.2rem; font-size:0.9em;">删除</button>
+`;
+					
+					// 绑定删除事件
+					view.querySelector('.sp-delete-btn').onclick = async () => {
+						const checkedBoxes = view.querySelectorAll('.item-checkbox:checked');
+						if (checkedBoxes.length === 0) return;
+						
+						const confirmed = await showDialog({ mode: 'confirm', text: `确定要删除这 ${checkedBoxes.length} 个商品吗？` });
+						if (!confirmed) return;
+						
+						const charId = currentCheckPhoneTargetId;
+						const latestEntry = [...blmxManager.logEntries].reverse().find(e =>
+							e.type === 'shopping_update' && e.author === charId
+						);
+						
+						if (!latestEntry) return;
+						
+						// 获取要删除的索引
+						const indicesToRemove = [];
+						checkedBoxes.forEach(cb => {
+							const itemEl = cb.closest('.sp-item');
+							indicesToRemove.push(parseInt(itemEl.dataset.itemIndex, 10));
+						});
+						
+						// 过滤数据
+						const oldItems = latestEntry.content.items;
+						const newItems = oldItems.filter((_, idx) => !indicesToRemove.includes(idx));
+						
+						// --- [新增] 删除旧记录 ---
+						blmxManager.logEntries = blmxManager.logEntries.filter(e =>
+							!(e.type === 'shopping_update' && e.author === charId)
+						);
+						
+						// 创建新的 update 记录
+						const newEntryId = `msg-shopping-del-${Date.now()}`;
+						blmxManager.addEntry({
+							id: newEntryId,
+							type: 'shopping_update',
+							author: charId,
+							content: { author: charId, items: newItems },
+							timestamp: new Date(window.currentGameDate).toISOString()
+						});
+						
+						await blmxManager.persistLogToStorage();
+						
+						// 退出编辑模式并刷新
+						handleShoppingManage(); // 相当于点击“完成”
+						renderShoppingApp(charId);
+						await showDialog({ mode: 'alert', text: '删除成功。' });
+					};
+				}
+			}
+			
 			// --- 2. 渲染购物车界面 (修复版：增加空状态处理) ---
 			function renderShoppingApp(charId) {
 				const view = document.getElementById('cp-shopping-view');
@@ -11761,12 +11978,6 @@ SHOPPING_UPDATE:{"author":"${charId}","items":[{"shopName":"店铺A","title":"�
 				const latestEntry = [...blmxManager.logEntries].reverse().find(e =>
 					e.type === 'shopping_update' && e.author === charId
 				);
-				
-				// 如果完全没有记录，触发生成
-				if (!latestEntry) {
-					triggerShoppingGeneration(charId);
-					return;
-				}
 				
 				// 2. 清空并准备
 				container.innerHTML = '';
@@ -11832,8 +12043,7 @@ SHOPPING_UPDATE:{"author":"${charId}","items":[{"shopName":"店铺A","title":"�
 						if (!mediaHtml) {
 							// 【修复】修正这里的正则 replace(/"/g, ...)
 							const safeText = (item.image || "").replace(/"/g, '&quot;');
-							const shortDesc = (item.image || "").length > 20 ? (item.image || "").substring(0, 20) + '...' : (item.image || "暂无描述");
-							mediaHtml = `<div class="sp-text-placeholder" data-full-text="${safeText}">${shortDesc}</div>`;
+							mediaHtml = `<div class="sp-text-placeholder" data-full-text="${safeText}" style="background: url('https://files.catbox.moe/c41va3.jpg') center/cover no-repeat; color: transparent;">${item.image}</div>`;
 						}
 						
 						shopHtml += `
@@ -12009,109 +12219,183 @@ SHOPPING_UPDATE:{"author":"${charId}","items":[{"shopName":"店铺A","title":"�
 				navigateTo('wechatChat', { conversationId: convo.id });
 			}
 			
-			/* ========================================== */
-			/* === 1. 淘宝/购物车 数据管理核心逻辑 === */
-			/* ========================================== */
-			
-			// 定义存储键名
-			const TAOBAO_STORAGE_KEY = (charId) => `blmx_taobao_data_${charId}`;
-			
-			// 读取数据 (无过期机制，永久存储)
-			function getTaobaoData(charId) {
-				const raw = localStorage.getItem(TAOBAO_STORAGE_KEY(charId));
-				// 默认结构：feed(推荐流), history(搜索历史)
-				return raw ? JSON.parse(raw) : { feed: [], history: [] };
-			}
-			
-			// 保存数据
-			function saveTaobaoData(charId, data) {
-				localStorage.setItem(TAOBAO_STORAGE_KEY(charId), JSON.stringify(data));
-			}
-			
-			// 【交互】修改购物车页面的“管理”按钮逻辑
-			// 请确保这段代码在 setupEventListeners 内部，或者替换掉原有的 cp-shopping-manage-btn 监听器
-			document.getElementById('cp-shopping-manage-btn').addEventListener('click', async () => {
-				const charId = currentCheckPhoneTargetId;
-				if (!charId) return;
-				
-				// 弹出三选项菜单
-				const choice = await showThreeOptionDialog({
-					text: '购物车与推荐管理',
-					buttons: ['清空购物车', '重置首页推荐'] // 第三个是默认的"取消"
-				});
-				
-				if (choice === '清空购物车') {
-					const confirmed = await showDialog({ mode: 'confirm', text: '确定要清空购物车里的所有商品吗？' });
-					if (confirmed) {
-						// 过滤掉 shopping_update 日志
-						blmxManager.logEntries = blmxManager.logEntries.filter(e =>
-							!(e.type === 'shopping_update' && e.author === charId)
-						);
-						await blmxManager.persistLogToStorage();
-						renderShoppingApp(charId); // 刷新视图
-						await showDialog({ mode: 'alert', text: '购物车已清空。' });
-					}
-				}
-				else if (choice === '重置首页推荐') {
-					const confirmed = await showDialog({ mode: 'confirm', text: '确定要清除首页的推荐流和搜索历史，重新生成吗？' });
-					if (confirmed) {
-						localStorage.removeItem(TAOBAO_STORAGE_KEY(charId));
-						// 刷新首页视图 (如果当前在首页)
-						if (document.getElementById('cp-shopping-home-view').classList.contains('active')) {
-							// 这里暂时留空，下一步我们会写 renderShoppingHome
-							// renderShoppingHome(charId);
-							document.getElementById('shopping-home-feed').innerHTML = ''; // 临时清空视觉
-						}
-						await showDialog({ mode: 'alert', text: '首页数据已重置，下次进入将重新生成。' });
-					}
-				}
-			});
-			/* ========================================== */
-			/* === 2. AI 提示词：首页推荐算法 (修正版) === */
-			/* ========================================== */
-			
-			function getTaobaoFeedContext(charId) {
+			function getTaobaoFeedContext(charId, keyword = null, theme = null) {
 				const name = getDisplayName(charId, null);
 				
+				let taskDescription = "";
+				let extraInstruction = "";
+				
+				if (keyword) {
+					// 模式 A: 搜索
+					taskDescription = `用户刚刚搜索了关键词【${keyword}】。请生成 4 个与该关键词高度相关但风格各异的搜索结果商品。同时将 "${keyword}" 插入到 history 搜索历史数组的第一位。`;
+				} else if (theme) {
+					// 模式 B: 特定频道/主题 (新增)
+					taskDescription = `用户点击了首页的【${theme.name}】频道。请根据该频道的特性，为角色推荐 4 个商品。`;
+					
+					// 针对特定频道的特殊指令
+					if (theme.instruction) {
+						extraInstruction = `\n**【频道特殊要求】**:\n${theme.instruction}`;
+					}
+				} else {
+					// 模式 C: 默认推荐
+					taskDescription = `请根据该角色的**性格、职业、近期经历、潜在欲望**，推算出TA打开淘宝时会看到的首页内容 (推荐流)。`;
+				}
+				
 				return `
-[任务: 淘宝首页推荐算法模拟]
+[任务: 淘宝首页内容生成]
 用户: ${name} (ID: ${charId})。
-你现在是淘宝的大数据推荐系统。请根据该角色的**性格、职业、近期经历、潜在欲望**，推算出TA打开淘宝时会看到的首页内容。
+${taskDescription}
+${extraInstruction}
 
 【生成要求】
-1. **搜索历史 (history)**: 生成 3-5 个短词。要求非常贴合角色当下的状态(如刚失恋搜"挽回"，熬夜搜"护肝片")。可以包含一些奇怪的、甚至有些羞耻的搜索词。
-
+1. **搜索历史 (history)**: 生成 3-5 个短词。要求非常贴合角色当下的状态。
 2. **推荐商品流 (items)**: 生成 4 个商品卡片。
 * **标题 (title)**: 充满淘宝风格的商品标题。
 * **店铺 (shop)**: 真实的或有趣的店铺名。
 * **价格 (price)**: 真实价格字符串。
 * **图片描述 (image)**: **中文**画面描述，用于AI生图，主体清晰，突出商品。
-* **推荐标签 (tag)**: 既然是算法推荐，给出一个理由。如："你搜过xx"、"偷看主页发现"、"深夜emo"、"同城热销"。
+* **推荐标签 (tag)**: 给出推荐理由。如："你搜过xx"、"偷看主页发现"、"深夜emo"、"同城热销"。
 
 【输出格式】
 只输出一条 JSON 指令，严禁废话：
 TAOBAO_HOME:{"author":"${charId}","history":["搜索词1","搜索词2"],"items":[{"title":"商品标题...","price":"29.9","shop":"xx旗舰店","image":"视觉描述...","tag":"推荐理由"},{"title":"...","price":"...","shop":"...","image":"...","tag":"..."}]}
 `.trim();
 			}
-			/* ========================================== */
-			/* === 3. AI 提示词：关键词搜索生成 === */
-			/* ========================================== */
 			
-			function getTaobaoSearchContext(keyword) {
-				return `
-[任务: 淘宝搜索结果生成]
-用户刚刚在搜索栏输入了关键词：【${keyword}】。
-请生成 **4个** 符合该关键词的商品搜索结果。
-
-【生成要求】
-1. **多样性**: 虽然关键词一样，但展示不同风格、价位或功能的商品。
-2. **图片描述 (image)**: **中文**画面描述，用于AI生图，主体清晰，突出商品。
-3. **销量/标签**: 模拟真实的淘宝环境。
-
-【输出格式】
-只输出一条 JSON 指令，严禁废话：
-TAOBAO_SEARCH:{"keyword":"${keyword}","items":[{"title":"商品1标题...","price":"199.00","shop":"店铺A","image":"商品1视觉描述...","tag":"1000+人付款"},{"title":"...","price":"...","shop":"...","image":"...","tag":"..."}]}
-`.trim();
+			async function triggerShoppingHomeGeneration(charId, keyword = null, theme = null) {
+				if (isGenerating) return;
+				
+				const container = document.getElementById('shopping-home-feed');
+				
+				// 动态生成加载提示文案
+				let loadingText = '正在刷新推荐流...';
+				if (keyword) loadingText = `正在搜索 "${keyword}"...`;
+				else if (theme) loadingText = `正在进入【${theme.name}】频道...`;
+				
+				container.innerHTML = `
+<div class="nai-loading-placeholder" style="grid-column: 1 / -1; margin-top: 2rem;">
+	<i class="fas fa-search fa-spin"></i> ${loadingText}
+</div>
+`;
+				
+				isGenerating = true;
+				updateFooterButtonsState();
+				
+				try {
+					// 将 theme 透传给 Prompt 函数
+					const prompt = getTaobaoFeedContext(charId, keyword, theme);
+					latestPromptSentToAI = prompt;
+					
+					const rawResponse = await tavernGenerateFunc({ user_input: prompt, should_stream: false });
+					latestAiRawResponse = rawResponse.trim();
+					
+					if (latestAiRawResponse) {
+						await parseAndHandleAiResponse(latestAiRawResponse);
+					} else {
+						container.innerHTML = '<p style="text-align:center;color:#999; grid-column:1/-1;">加载失败 (AI无返回)。</p>';
+					}
+					
+				} catch (e) {
+					console.error("Shopping Home generation failed:", e);
+					container.innerHTML = `<p style="text-align:center;color:red; grid-column:1/-1;">错误: ${e.message}</p>`;
+				} finally {
+					isGenerating = false;
+					updateFooterButtonsState();
+				}
+			}
+			
+			function renderShoppingHome(charId) {
+				const container = document.getElementById('shopping-home-feed');
+				if (!container) return;
+				
+				// 1. 获取最新数据
+				const latestEntry = [...blmxManager.logEntries].reverse().find(e =>
+					e.type === 'taobao_home' && e.author === charId
+				);
+				
+				// 如果没有数据，显示初始化按钮
+				if (!latestEntry) {
+					container.innerHTML = `
+<div style="grid-column:1/-1; text-align:center; padding:2rem; color:var(--text-color-tertiary);">
+	<i class="fas fa-shopping-bag" style="font-size:3rem; opacity:0.3; margin-bottom:1rem;"></i>
+	<p>首页空空如也</p>
+	<button id="init-tb-home-btn" class="studio-btn primary" style="margin-top:1rem;">
+		<i class="fas fa-sync-alt"></i> 刷新推荐
+	</button>
+</div>
+`;
+					const initBtn = document.getElementById('init-tb-home-btn');
+					if (initBtn) initBtn.onclick = () => triggerShoppingHomeGeneration(charId);
+					return;
+				}
+				
+				const data = latestEntry.content;
+				
+				// 2. 渲染商品流
+				container.innerHTML = '';
+				if (data.items && data.items.length > 0) {
+					data.items.forEach((item, index) => {
+						const uniqueImgId = `${latestEntry.id}_img_${index}`;
+						
+						// 图片处理
+						let mediaHtml = getNaiContentHtml(uniqueImgId, item.image);
+						if (!mediaHtml) {
+							const safeText = (item.image || "").replace(/"/g, '&quot;');
+							mediaHtml = `<div class="tb-img-placeholder-text" data-full-text="${safeText}" style="background: url('https://files.catbox.moe/c41va3.jpg') center/cover no-repeat;"></div>`;
+						}
+						
+						// 构建卡片 HTML
+						const card = document.createElement('div');
+						card.className = 'tb-product-card';
+						card.innerHTML = `
+<div class="tb-product-img">
+	${mediaHtml}
+</div>
+<div class="tb-product-info">
+	<div class="tb-product-title">${item.title || '未知商品'}</div>
+	<div class="tb-tags-row">
+		<span class="tb-tag">${item.tag || '猜你喜欢'}</span>
+	</div>
+	<div class="tb-price-row">
+		<span class="tb-symbol">¥</span>
+		<span class="tb-price-num">${item.price || '0.00'}</span>
+		<span class="tb-sales">${item.shop || '淘宝好店'}</span>
+	</div>
+</div>
+`;
+						
+						// 绑定图片点击事件 (无图模式弹窗)
+						const placeholder = card.querySelector('.tb-img-placeholder-text');
+						if (placeholder) {
+							placeholder.addEventListener('click', (e) => {
+								e.stopPropagation();
+								showDialog({ mode: 'alert', text: placeholder.dataset.fullText });
+							});
+						}
+						
+						// TODO: 绑定卡片点击跳转详情页 (Step 3 实现)
+						// card.addEventListener('click', () => showProductDetail(item));
+						
+						container.appendChild(card);
+					});
+				}
+				
+				// 3. 处理搜索栏轮播
+				const searchInput = document.querySelector('.tb-search-input');
+				if (searchInput && data.history && data.history.length > 0) {
+					// 先清除旧定时器
+					if (searchTickerInterval) clearInterval(searchTickerInterval);
+					
+					let historyIndex = 0;
+					// 立即显示第一个
+					searchInput.placeholder = data.history[0];
+					
+					// 启动轮播
+					searchTickerInterval = setInterval(() => {
+						historyIndex = (historyIndex + 1) % data.history.length;
+						searchInput.placeholder = data.history[historyIndex];
+					}, 3000);
+				}
 			}
 			
 			function renderShoppingProfile() {
@@ -12126,8 +12410,36 @@ TAOBAO_SEARCH:{"keyword":"${keyword}","items":[{"title":"商品1标题...","pric
 				// 填充顶部卡片
 				document.getElementById('tb-user-name').textContent = name;
 				document.getElementById('tb-user-avatar').src = avatar;
+			}
+			
+			function renderProductDetail(product) {
+				currentProductDetails = product;
 				
-				// (后续可以在这里添加 AI 生成的逻辑，现在先静态显示)
+				const heroContainer = document.getElementById('tb-detail-hero');
+				heroContainer.innerHTML = '';
+				
+				let mediaHtml = '';
+				
+				if (product.image && product.image.startsWith('http')) {
+					mediaHtml = `<img src="${product.image}" alt="Product Image">`;
+				} else {
+					// [核心修改] 只保留纯文本，去掉任何标题
+					mediaHtml = `
+<div class="tb-detail-hero-text">
+	${product.image || "暂无画面描述"}
+</div>
+`;
+				}
+				
+				if (product._imgBlobUrl) {
+					mediaHtml = `<img src="${product._imgBlobUrl}" alt="Generated Image">`;
+				}
+				
+				heroContainer.innerHTML = mediaHtml;
+				
+				document.getElementById('tb-detail-price').textContent = product.price || '99.00';
+				document.getElementById('tb-detail-title').textContent = product.title || '未知商品';
+				document.getElementById('tb-detail-shop-name').textContent = product.shop || '官方旗舰店';
 			}
 			
 			function setupEventListeners() {
@@ -12196,13 +12508,7 @@ TAOBAO_SEARCH:{"keyword":"${keyword}","items":[{"title":"商品1标题...","pric
 						else if (appType === 'shopping') {
 							const charId = currentCheckPhoneTargetId;
 							if (!charId) return;
-							
-							// 【修改】现在点击图标，先去淘宝首页，而不是直接去购物车列表
 							navigateTo('shoppingHome');
-							
-							// 这里暂时不做 AI 生成逻辑，先让你可以进去看 UI
-							// 如果首页是空的，我们手动触发一次渲染(复用之前的购物车数据来假装一下，或者留空)
-							// 暂时留空即可，稍后我们写专门的 renderShoppingHome(charId)
 						}
 						else {
 							// 其他未开发的 APP 继续弹窗
@@ -12215,8 +12521,137 @@ TAOBAO_SEARCH:{"keyword":"${keyword}","items":[{"title":"商品1标题...","pric
 					}
 				});
 				
+				const feedContainer = document.getElementById('shopping-home-feed');
+				if (feedContainer) {
+					feedContainer.addEventListener('click', (e) => {
+						const card = e.target.closest('.tb-product-card');
+						if (!card) return;
+						
+						// 防止点击图片占位符时触发两次 (占位符有自己的弹窗)
+						if (e.target.classList.contains('tb-img-placeholder-text')) return;
+						const imgEl = card.querySelector('img');
+						const blobUrl = imgEl ? imgEl.src : null;
+						const descEl = card.querySelector('.tb-img-placeholder-text');
+						
+						const productData = {
+							title: card.querySelector('.tb-product-title').textContent,
+							price: card.querySelector('.tb-price-num').textContent,
+							shop: card.querySelector('.tb-sales').textContent, // 列表页把店铺放在这里了
+							image: descEl ? descEl.dataset.fullText : (imgEl ? imgEl.src : ""),
+							_imgBlobUrl: blobUrl // 传递生成的图片URL
+						};
+						
+						navigateTo('productDetail');
+						renderProductDetail(productData);
+					});
+				}
 				
+				// --- 2. 详情页：返回按钮 ---
+				document.getElementById('tb-detail-back-btn').addEventListener('click', () => {
+					// 返回首页
+					navigateTo('shoppingHome');
+				});
+				
+				// --- 3. 详情页：加入购物车 ---
+				document.getElementById('tb-detail-add-cart').addEventListener('click', () => {
+					handleAddToShoppingCart();
+				});
+				
+				// --- 4. 详情页：立即购买 (生成分享卡片) ---
+				document.getElementById('tb-detail-buy-now').addEventListener('click', async () => {
+					if (!currentProductDetails) return;
+					
+					// [核心修复]：获取当前正在查看的角色ID
+					const targetCharId = currentCheckPhoneTargetId;
+					
+					// 如果当前没有活动的聊天ID，尝试根据正在查看的角色自动定位
+					if (!currentConversationId && targetCharId) {
+						// 尝试查找与该角色的私聊
+						let convo = conversations.find(c => c.type === 'single' && c.members.includes(targetCharId));
+						
+						// 如果没找到私聊，自动创建一个
+						if (!convo) {
+							convo = {
+								id: `convo_single_${targetCharId}`,
+								type: 'single',
+								members: ['user', targetCharId],
+								unread: 0,
+								pinned: false,
+								lastActivity: Date.now()
+							};
+							conversations.push(convo);
+						}
+						// 临时设置当前的会话ID，以便消息能发出去
+						currentConversationId = convo.id;
+					}
+					
+					if (!currentConversationId) {
+						await showDialog({ mode: 'alert', text: '错误：无法确定分享目标，请先进入一个聊天窗口或选择查看对象的手机。' });
+						return;
+					}
+					
+					const confirmed = await showDialog({
+						mode: 'confirm',
+						text: '确定要立即购买并分享给对方吗？'
+					});
+					
+					if (confirmed) {
+						// 构造分享数据
+						// 注意：这里我们使用 content 字段直接存对象，类型为 product_share
+						const productData = {
+							title: currentProductDetails.title,
+							price: currentProductDetails.price,
+							image: currentProductDetails.image,
+							shop: currentProductDetails.shop
+						};
+						
+						// 发送到当前聊天
+						stageAndDisplayEntry({
+							type: 'product_share',
+							sender: 'me',
+							content: productData // 直接传对象
+						});
+						
+						await showDialog({ mode: 'alert', text: '商品已分享！' });
+						// 返回聊天界面
+						navigateTo('wechatChat', { conversationId: currentConversationId });
+					}
+				});
 				// --- 新增：淘宝首页的交互事件 ---
+				
+				// --- [新增] 淘宝首页一键清空按钮 ---
+				const tbClearBtn = document.querySelector('.tb-clear-home-btn');
+				if (tbClearBtn) {
+					tbClearBtn.addEventListener('click', async () => {
+						const charId = currentCheckPhoneTargetId;
+						if (!charId) return;
+						
+						const confirmed = await showDialog({
+							mode: 'confirm',
+							text: '确定要清空当前的商品推荐流吗？\n清空后可点击刷新按钮重新生成。'
+						});
+						
+						if (confirmed) {
+							// 1. 从日志中过滤掉该角色的淘宝首页记录
+							blmxManager.logEntries = blmxManager.logEntries.filter(entry =>
+								!(entry.type === 'taobao_home' && entry.author === charId)
+							);
+							
+							// 2. 持久化保存
+							await blmxManager.persistLogToStorage();
+							
+							// 3. 刷新页面（renderShoppingHome 会自动处理无数据的情况，显示刷新按钮）
+							renderShoppingHome(charId);
+							
+							await showDialog({ mode: 'alert', text: '推荐流已清空。' });
+						}
+					});
+				}
+				// --- 购物车：管理按钮 ---
+				document.getElementById('cp-shopping-manage-btn').addEventListener('click', () => {
+					handleShoppingManage();
+				});
+				
 				// 购物车页面：点击底部“首页” -> 返回淘宝首页
 				const navToHomeBtn = document.getElementById('nav-to-home-from-cart');
 				if (navToHomeBtn) {
@@ -12232,30 +12667,134 @@ TAOBAO_SEARCH:{"keyword":"${keyword}","items":[{"title":"商品1标题...","pric
 					navToCartBtn.addEventListener('click', () => {
 						const charId = currentCheckPhoneTargetId;
 						if (!charId) return;
-						
 						navigateTo('shopping'); // 跳转到原来的购物车视图
 						renderShoppingApp(charId); // 渲染购物车数据
 					});
 				}
 				
-				// 2. 底部导航：点击“首页” -> (如果当前在购物车页需加返回逻辑，但在首页页点击只是高亮自己)
-				// 这里我们还需要给旧购物车页面的返回按钮做一个逻辑修正
-				
-				// 修正：旧购物车页面(cp-shopping-view)的返回按钮，现在应该返回到淘宝首页，而不是手机桌面
+				// 2. 底部导航：点击“首页” -> 
 				const shoppingBackBtn = document.getElementById('cp-shopping-back-btn');
-				// 移除旧的监听器比较麻烦，建议直接覆盖 onclick (如果你之前的代码是用 addEventListener，这里可能需要注意)
-				// 简单起见，我们在 navigateTo('shoppingHome') 时处理好层级关系
-				// 暂时先保持旧购物车返回到桌面，后续我们把旧购物车做成子页面。
 				
-				// 临时：给淘宝首页的“扫一扫”图标绑定一个返回桌面的功能，方便你调试退出
-				// (正式版我们会做专门的返回逻辑或者底部导航返回)
 				document.querySelector('.tb-scan-icon').addEventListener('click', () => {
 					navigateTo('checkPhone');
 				});
-				// 购物车页面返回按钮
+				
 				document.getElementById('cp-shopping-back-btn').addEventListener('click', () => {
-					navigateTo('checkPhone');
+					navigateTo('shoppingHome');
 				});
+				
+				// --- 搜索按钮点击 ---
+				// --- 淘宝金刚区 (Icons) 点击事件 ---
+				// 定义图标名称到 Prompt 指令的映射
+				const TB_ICON_THEMES = {
+					"想去旅行": {
+						name: "想去旅行",
+						instruction: "推荐旅行相关的商品，如机票、酒店套餐、旅行收纳、度假穿搭。根据角色最近是否劳累决定是推荐'特种兵旅游'还是'躺平度假'。"
+					},
+					"深夜冲动": {
+						name: "深夜冲动",
+						instruction: "推荐适合深夜下单的商品：高热量夜宵、成人玩具、昂贵的数码产品、情感抚慰用品。侧重于'冲动消费'和'私密欲望'。"
+					},
+					"闲置回血": {
+						name: "闲置回血",
+						instruction: "【特殊反向逻辑】推荐角色**想要卖掉**的二手物品。例如：前任送的礼物、不再喜欢的旧物、冲动消费后的后悔药。店铺名显示为'我的闲置'。"
+					},
+					"海外代购": {
+						name: "海外代购",
+						instruction: "推荐昂贵的进口商品、奢侈品、或者国内买不到的小众好物。"
+					},
+					"健康养生": {
+						name: "健康养生",
+						instruction: "推荐保健品、养生壶、护肝片、防脱发产品。侧重于当代年轻人的'赛博养生'。"
+					},
+					"礼物推荐": {
+						name: "礼物推荐",
+						instruction: "角色可能正在考虑给某人（可能是{{user}}，也可能是其他人）买礼物。推荐一些具有送礼属性的精致商品。"
+					},
+					"角色穿搭": {
+						name: "角色穿搭",
+						instruction: "基于角色的外貌描写和风格，推荐TA可能会喜欢的衣服、配饰、鞋包。"
+					},
+					"宅家必备": {
+						name: "宅家必备",
+						instruction: "推荐提升居家幸福感的好物，游戏机、懒人沙发、零食大礼包、智能家居。"
+					},
+					"浏览历史": {
+						name: "浏览历史",
+						instruction: "展示角色最近看过但没买的东西，反映TA的纠结和犹豫。"
+					},
+					"全部频道": {
+						name: "猜你喜欢",
+						instruction: "生成一组完全随机、脑洞大开的商品，试图探测角色的潜在兴趣。"
+					}
+				};
+				
+				const iconsGrid = document.querySelector('.tb-icons-grid');
+				if (iconsGrid) {
+					iconsGrid.addEventListener('click', async (e) => {
+						const item = e.target.closest('.tb-icon-item');
+						if (!item) return;
+						
+						const label = item.querySelector('.tb-icon-label').textContent.trim();
+						const theme = TB_ICON_THEMES[label];
+						const charId = currentCheckPhoneTargetId;
+						
+						if (!charId || !theme) return;
+						
+						const confirmed = await showDialog({
+							mode: 'confirm',
+							text: `进入【${label}】频道？\n这会刷新当前的商品推荐流。`
+						});
+						
+						if (confirmed) {
+							triggerShoppingHomeGeneration(charId, null, theme);
+						}
+					});
+				}
+				const searchBtn = document.querySelector('.tb-search-btn');
+				const searchInput = document.querySelector('.tb-search-input');
+				
+				// 公共处理函数
+				const handleTbSearch = async () => {
+					const charId = currentCheckPhoneTargetId;
+					if (!charId) return;
+					
+					// 获取当前输入值，如果为空则使用 placeholder (轮播词)
+					const keyword = searchInput.value.trim() || searchInput.placeholder;
+					
+					if (!keyword || keyword.includes('...')) {
+						await showDialog({ mode: 'alert', text: '请输入搜索关键词。' });
+						return;
+					}
+					
+					const confirmed = await showDialog({
+						mode: 'confirm',
+						text: `确定要搜索 "${keyword}" 吗？\n这将刷新首页推荐流。`
+					});
+					
+					if (confirmed) {
+						// 清空输入框
+						searchInput.value = '';
+						// 触发生成
+						triggerShoppingHomeGeneration(charId, keyword);
+					}
+				};
+				
+				if (searchBtn) {
+					searchBtn.addEventListener('click', handleTbSearch);
+				}
+				
+				if (searchInput) {
+					// 移除 readonly 属性，允许输入
+					searchInput.removeAttribute('readonly');
+					
+					searchInput.addEventListener('keydown', (e) => {
+						if (e.key === 'Enter') {
+							e.preventDefault();
+							handleTbSearch();
+						}
+					});
+				}
 				
 				// --- 淘宝“我的”页面导航逻辑 ---
 				
@@ -15724,7 +16263,8 @@ TAOBAO_SEARCH:{"keyword":"${keyword}","items":[{"title":"商品1标题...","pric
 					'GALLERY_UPDATE',
 					'HIDDEN_ALBUM_UPDATE',
 					'TRASH_BIN_UPDATE',
-					'SHOPPING_UPDATE'
+					'SHOPPING_UPDATE',
+					'TAOBAO_HOME' // <--- 【在这里添加】
 				];
 				
 				// 2. 尝试按指令分割，用于生成虚拟时间戳
@@ -15884,7 +16424,6 @@ TAOBAO_SEARCH:{"keyword":"${keyword}","items":[{"title":"商品1标题...","pric
 						// 5. 其他指令分发
 						switch (key) {
 							case 'WEIBO_POST':
-								// <--- 【在这里添加】 如果帖子包含图片描述，触发 NAI 生成 --->
 								if (data.image_type === 'desc' && data.image) {
 									processEntryWithNAI(data.postId, data.image, 'weibo');
 								}
@@ -15949,33 +16488,23 @@ TAOBAO_SEARCH:{"keyword":"${keyword}","items":[{"title":"商品1标题...","pric
 								break;
 							case 'HIDDEN_ALBUM_UPDATE':
 							case 'TRASH_BIN_UPDATE':
-								// 1. 补全基础信息
 								if (!data.author) data.author = currentCheckPhoneTargetId || 'unknown';
 								const updateId = `msg-${key.toLowerCase()}-${Date.now()}`;
-								
-								// 2. 存入日志
 								blmxManager.addEntry({
 									id: updateId,
-									type: key.toLowerCase(), // 类型变小写: hidden_album_update
+									type: key.toLowerCase(),
 									author: data.author,
 									content: data,
 									timestamp: new Date(window.currentGameDate).toISOString()
 								});
-								
-								// 3. 遍历里面的图片，扔给 NAI 去画
 								if (data.items && Array.isArray(data.items)) {
 									data.items.forEach((item, index) => {
 										const uniqueImgId = `${updateId}_img_${index}`;
-										// 只要有 image 字段，就去生成 (无论是加密的还是垃圾桶的)
 										if (item.image) {
 											processEntryWithNAI(uniqueImgId, item.image, 'gallery');
-											// 注意：这里 type 传 'gallery' 就可以，因为我们会在渲染函数里通用处理
 										}
 									});
 								}
-								
-								// 4. 立即刷新当前界面
-								// 如果用户正停留在对应界面，马上渲染出来
 								const hiddenView = document.getElementById('cp-hidden-album-view');
 								const trashView = document.getElementById('cp-trash-bin-view');
 								
@@ -15986,12 +16515,9 @@ TAOBAO_SEARCH:{"keyword":"${keyword}","items":[{"title":"商品1标题...","pric
 									renderTrashBin(data.author);
 								}
 								break;
-								// 在 switch (key) 内部添加：
 							case 'SHOPPING_UPDATE':
 								if (!data.author) data.author = currentCheckPhoneTargetId || 'unknown';
 								const shopEntryId = `msg-shopping-${Date.now()}`;
-								
-								// 存入日志 (类型要转小写)
 								blmxManager.addEntry({
 									id: shopEntryId,
 									type: 'shopping_update',
@@ -15999,22 +16525,51 @@ TAOBAO_SEARCH:{"keyword":"${keyword}","items":[{"title":"商品1标题...","pric
 									content: data,
 									timestamp: new Date(window.currentGameDate).toISOString()
 								});
-								
-								// 触发 NAI 生图 (如果 items 存在)
 								if (data.items && Array.isArray(data.items)) {
 									data.items.forEach((item, index) => {
 										const uniqueImgId = `${shopEntryId}_img_${index}`;
 										if (item.image) {
-											// type 传 'shopping'，以便生图完成后只刷新购物车界面
 											processEntryWithNAI(uniqueImgId, item.image, 'shopping');
 										}
 									});
 								}
-								
-								// 如果当前就在购物车页面，立即刷新
 								const shoppingView = document.getElementById('cp-shopping-view');
 								if (shoppingView && shoppingView.classList.contains('active')) {
 									renderShoppingApp(data.author);
+								}
+								break;
+							case 'TAOBAO_HOME':
+								if (!data.author) data.author = currentCheckPhoneTargetId || 'unknown';
+								const tbEntryId = `msg-tb-home-${Date.now()}`;
+								
+								// --- [核心修复] 在添加新记录前，彻底清除该角色旧的首页记录 ---
+								blmxManager.logEntries = blmxManager.logEntries.filter(e =>
+									!(e.type === 'taobao_home' && e.author === data.author)
+								);
+								
+								// 1. 存入日志
+								blmxManager.addEntry({
+									id: tbEntryId,
+									type: 'taobao_home',
+									author: data.author,
+									content: data,
+									timestamp: new Date(window.currentGameDate).toISOString()
+								});
+								
+								// 2. 触发 NAI 生图 (保持不变)
+								if (data.items && Array.isArray(data.items)) {
+									data.items.forEach((item, index) => {
+										const uniqueImgId = `${tbEntryId}_img_${index}`;
+										if (item.image) {
+											processEntryWithNAI(uniqueImgId, item.image, 'shopping_home');
+										}
+									});
+								}
+								
+								// 3. 刷新 UI (保持不变)
+								const tbHomeView = document.getElementById('cp-shopping-home-view');
+								if (tbHomeView && tbHomeView.classList.contains('active')) {
+									renderShoppingHome(data.author);
 								}
 								break;
 							case 'VIDEO_CALL':
@@ -18394,3 +18949,4 @@ AMA_PAIR:{"question":"这里是匿名用户提出的问题内容","answer":"这�
 			a.click();
 			document.body.removeChild(a);
 		};
+	
