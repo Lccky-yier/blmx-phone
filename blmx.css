@@ -716,8 +716,8 @@
 		}
 		
 		.app-icon .icon-image {
-			width: 3.8rem;
-			height: 3.8rem;
+			width: 3.5rem;
+			height: 3.5rem;
 			border-radius: 22.5%;
 			margin-bottom: 0.4375rem;
 			background-size: contain;
@@ -3132,7 +3132,9 @@
 		.message-bubble.forward-bubble::before,
 		.message-bubble.forward-bubble::after,
 		.message-bubble.music-share-bubble::before,
-		.message-bubble.music-share-bubble::after {
+		.message-bubble.music-share-bubble::after,
+		.message-row .message-bubble.product-share-bubble::before,
+		.message-row .message-bubble.product-share-bubble::after {
 			content: none !important;
 			display: none !important;
 		}
@@ -3145,7 +3147,8 @@
 		.message-bubble.transfer-bubble,
 		.message-bubble.file-bubble,
 		.message-bubble.location-bubble,
-		.message-bubble.forward-bubble {
+		.message-bubble.forward-bubble,
+		.message-row .message-bubble.product-share-bubble {
 			background: transparent !important;
 			background-image: none !important;
 			border: none !important;
@@ -8469,6 +8472,24 @@
 			background-color: var(--tb-bg-color);
 			/* 顶部背景也是灰色 */
 			border-bottom: none;
+			padding-top: 3.5rem;
+		}
+		
+		/* 2. 购物车内容滚动区 */
+		/* [修改] 增加隐藏滚动条的样式 */
+		.shopping-body,
+		.tb-home-body {
+			/* 顺便把淘宝首页的滚动条也隐藏了 */
+			-ms-overflow-style: none;
+			/* IE and Edge */
+			scrollbar-width: none;
+			/* Firefox */
+		}
+		
+		.shopping-body::-webkit-scrollbar,
+		.tb-home-body::-webkit-scrollbar {
+			display: none;
+			/* Chrome, Safari, Opera */
 		}
 		
 		#cp-shopping-view .title {
@@ -8759,7 +8780,7 @@
 		/* 3. 底部结算栏 (Settlement Bar) */
 		.sp-footer {
 			position: absolute;
-			bottom: 3.8rem;
+			bottom: 3rem;
 			left: 0;
 			right: 0;
 			height: 3.5rem;
@@ -8780,14 +8801,13 @@
 			bottom: 0;
 			left: 0;
 			right: 0;
-			height: 3.5rem;
+			height: 3rem;
 			background-color: var(--card-bg-primary);
 			border-top: none;
 			z-index: 10;
 			display: flex;
 			justify-content: space-around;
 			align-items: center;
-			padding-bottom: 0.5rem;
 		}
 		
 		.sp-footer-left {
@@ -9110,10 +9130,10 @@
 			display: flex;
 			justify-content: space-around;
 			align-items: center;
-			height: 3.5rem;
+			height: 3rem;
 			background-color: var(--card-bg-primary);
 			border-top: 1px solid var(--divider-color-primary);
-			padding-bottom: 0.5rem;
+			flex-shrink: 0;
 		}
 		
 		.tb-nav-item {
@@ -9499,206 +9519,385 @@
 			font-size: 1.5em;
 		}
 		
-		/* --- 淘宝后续功能预留样式 (Address, Orders, Popups) --- */
+		/* --- 淘宝商品详情页 (分屏固定版) --- */
 		
-		/* 1. 通用列表卡片 (用于收货地址/订单列表) */
-		.tb-list-card {
-			background-color: var(--card-bg-primary);
-			border-radius: 12px;
-			padding: 1rem;
-			margin-bottom: 0.8rem;
+		/* 1. 容器：绝对定位，全屏固定，禁止页面级滚动 */
+		#cp-product-detail-view {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: #F4F4F4 !important;
+			z-index: 200;
+			display: flex;
+			flex-direction: column;
+			overflow: hidden;
+			/* 核心：禁止整体滚动 */
+		}
+		
+		/* 2. 顶部悬浮栏：上移 */
+		.tb-detail-header {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			padding: 2rem 0.8rem 0 0.8rem;
+			/* 核心：减小顶部距离 */
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			z-index: 20;
+			/* 保证在最上层 */
+			pointer-events: none;
+			box-sizing: border-box;
+		}
+		
+		.tb-detail-header i {
+			pointer-events: auto;
+			width: 2rem;
+			height: 2rem;
+			background-color: rgba(0, 0, 0, 0.4);
+			color: white;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 1rem;
+			backdrop-filter: blur(4px);
+			cursor: pointer;
+		}
+		
+		/* 3. 主布局容器：分为上下两部分 */
+		.tb-detail-body {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			height: 100%;
+			overflow: hidden;
+			/* 禁止此处滚动 */
 			position: relative;
 		}
 		
-		/* 地址行样式 */
-		.tb-addr-row {
+		/* 4. 上半部：图片/展示区 (固定不滚动) */
+		.tb-detail-hero {
+			height: 35%;
+			width: 100%;
+			flex-shrink: 0;
+			background-color: #fff;
+			position: relative;
+			z-index: 1;
+		}
+		
+		.tb-detail-hero img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			display: block;
+		}
+		
+		/* 无图时的文字容器：去掉多余装饰，纯文字居中 */
+		.tb-detail-hero-text {
+			width: 100%;
+			height: 100%;
+			padding: 3rem 1.5rem 1rem 1.5rem;
+			box-sizing: border-box;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			/* [修改] 背景改为淘宝橙色渐变 */
+			background: linear-gradient(135deg, #FF9000 0%, #FF5000 100%);
+			/* [修改] 文字改为白色 */
+			color: #ffffff;
+			font-size: 0.95rem;
+			line-height: 1.6;
+			text-align: justify;
+			overflow-y: auto;
+			text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+			/* 可选：加一点文字阴影增加质感 */
+		}
+		
+		/* 5. 下半部：信息滚动区 */
+		.tb-detail-scroll-container {
+			flex: 1;
+			/* 占剩余高度 */
+			background-color: #F4F4F4;
+			overflow-y: auto;
+			/* 核心：只有这里可以滚动 */
+			padding-bottom: 4rem;
+			/* 底部留空给操作栏 */
+			z-index: 2;
+			position: relative;
+			box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.05);
+			/* 加点阴影区分上下 */
+		}
+		
+		/* 隐藏滚动条 */
+		.tb-detail-scroll-container::-webkit-scrollbar {
+			display: none;
+		}
+		
+		/* 6. 卡片样式调整 */
+		.tb-detail-main-card {
+			background-color: #fff;
+			padding: 1rem;
+			margin-bottom: 0.6rem;
+			border-radius: 0 0 12px 12px;
+			/* 只有下面圆角 */
+		}
+		
+		.tb-detail-price-row {
 			display: flex;
 			align-items: baseline;
-			gap: 0.5rem;
-			margin-bottom: 0.3rem;
+			color: #FF5000;
+			margin-bottom: 0.5rem;
 		}
 		
-		.tb-addr-name {
-			font-size: 1em;
+		.tb-detail-symbol {
+			font-size: 0.9rem;
 			font-weight: bold;
-			color: var(--text-color-primary);
+			margin-right: 2px;
 		}
 		
-		.tb-addr-phone {
-			font-size: 0.9em;
-			color: var(--text-color-secondary);
-			font-family: monospace;
+		.tb-detail-price {
+			font-size: 1.6rem;
+			font-weight: bold;
+			margin-right: 0.5rem;
+			font-family: Arial, sans-serif;
 		}
 		
-		.tb-addr-detail {
-			font-size: 0.85em;
-			color: var(--text-color-secondary);
+		.tb-detail-sales {
+			font-size: 0.75rem;
+			color: #999;
+			margin-left: auto;
+		}
+		
+		.tb-detail-title {
+			font-size: 1rem;
+			font-weight: 600;
+			color: #333;
 			line-height: 1.4;
+			margin-bottom: 0.8rem;
 		}
 		
-		.tb-addr-tag {
-			font-size: 0.6em;
-			padding: 1px 4px;
-			background-color: rgba(255, 80, 0, 0.1);
-			color: var(--tb-primary-orange);
-			border-radius: 4px;
-			margin-right: 0.3rem;
-		}
-		
-		/* 2. 订单商品缩略图样式 */
-		.tb-order-goods {
+		.tb-detail-tag-row {
 			display: flex;
-			gap: 0.8rem;
-			background-color: var(--view-bg-primary);
-			/* 浅灰底 */
-			padding: 0.5rem;
-			border-radius: 8px;
-			margin-top: 0.5rem;
+			gap: 0.4rem;
+			margin-bottom: 0.8rem;
 		}
 		
-		.tb-order-thumb {
-			width: 4rem;
-			height: 4rem;
-			border-radius: 6px;
-			object-fit: cover;
-			background-color: #e0e0e0;
-		}
-		
-		.tb-order-desc {
-			flex-grow: 1;
+		.tb-detail-tag-img {
+			height: 1rem;
+			background: #FF0036;
+			color: white;
+			font-size: 0.7rem;
+			padding: 0 4px;
+			border-radius: 2px;
 			display: flex;
-			flex-direction: column;
+			align-items: center;
+			white-space: nowrap;
+		}
+		
+		.tb-detail-meta-row {
+			display: flex;
 			justify-content: space-between;
+			font-size: 0.75rem;
+			color: #999;
 		}
 		
-		/* 3. 淘宝风格底部半屏弹窗 (Bottom Sheet) - 预留给详情页/SKU选择 */
-		.tb-bottom-sheet {
+		/* 7. 评价/店铺 */
+		.tb-detail-section {
+			background-color: #fff;
+			border-radius: 12px;
+			padding: 0.8rem;
+			margin: 0 0.6rem 0.6rem 0.6rem;
+		}
+		
+		.tb-review-header {
+			display: flex;
+			justify-content: space-between;
+			font-size: 0.9rem;
+			font-weight: 600;
+			margin-bottom: 0.5rem;
+		}
+		
+		.tb-review-more {
+			font-size: 0.75rem;
+			color: #FF5000;
+			font-weight: normal;
+		}
+		
+		.tb-shop-row {
+			display: flex;
+			align-items: center;
+			gap: 0.8rem;
+		}
+		
+		.tb-shop-logo {
+			width: 2.8rem;
+			height: 2.8rem;
+			border-radius: 4px;
+			border: 1px solid #eee;
+			background: white;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			font-size: 1.4rem;
+			color: #FF5000;
+		}
+		
+		.tb-shop-info h4 {
+			margin: 0;
+			font-size: 0.95rem;
+			color: #333;
+		}
+		
+		.tb-shop-info p {
+			margin: 0.2rem 0 0 0;
+			font-size: 0.7rem;
+			color: #999;
+		}
+		
+		.tb-shop-btn {
+			margin-left: auto;
+			border: 1px solid #FF5000;
+			color: #FF5000;
+			border-radius: 1rem;
+			padding: 0.25rem 0.7rem;
+			font-size: 0.75rem;
+		}
+		
+		/* 8. 底部操作栏 */
+		.tb-detail-footer {
 			position: absolute;
 			bottom: 0;
 			left: 0;
 			right: 0;
-			background-color: var(--card-bg-primary);
-			border-radius: 16px 16px 0 0;
-			padding: 1rem;
-			padding-bottom: 2rem;
-			box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
-			transform: translateY(100%);
-			/* 默认隐藏 */
-			transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-			z-index: 100;
-			max-height: 80%;
+			height: 3.5rem;
+			background-color: #fff;
+			display: flex;
+			align-items: center;
+			padding: 0 0.5rem;
+			box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.05);
+			z-index: 201;
+		}
+		
+		.tb-footer-icons {
+			display: flex;
+			gap: 1.2rem;
+			padding: 0 1rem;
+			flex-shrink: 0;
+		}
+		
+		.tb-icon-btn {
 			display: flex;
 			flex-direction: column;
+			align-items: center;
+			font-size: 0.65rem;
+			color: #666;
+			gap: 2px;
 		}
 		
-		.tb-bottom-sheet.active {
-			transform: translateY(0);
+		.tb-icon-btn i {
+			font-size: 1.1rem;
 		}
 		
-		.tb-sheet-header {
+		.tb-footer-btns {
+			flex: 1;
 			display: flex;
-			gap: 1rem;
-			margin-bottom: 1rem;
+			height: 2.2rem;
+			margin-left: 0.5rem;
 		}
 		
-		.tb-sheet-thumb {
-			width: 6rem;
-			height: 6rem;
-			border-radius: 8px;
-			margin-top: -2rem;
-			/* 突出一部分 */
-			background-color: white;
-			padding: 2px;
-			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-			object-fit: cover;
-		}
-		
-		.tb-sheet-close {
-			position: absolute;
-			top: 1rem;
-			right: 1rem;
-			font-size: 1.2rem;
-			color: var(--text-color-tertiary);
-			cursor: pointer;
-		}
-		
-		/* 4. 淘宝风格按钮 (实心/空心) */
-		.tb-btn {
-			padding: 0.3rem 0.8rem;
-			border-radius: 20px;
-			font-size: 0.8em;
-			cursor: pointer;
-			display: inline-block;
-			text-align: center;
-		}
-		
-		.tb-btn.solid {
-			background: var(--tb-orange-gradient);
+		.tb-btn-cart {
+			flex: 1;
+			background: linear-gradient(90deg, #FFCB00, #FF9402);
 			color: white;
 			border: none;
+			border-radius: 20px 0 0 20px;
+			font-weight: bold;
+			font-size: 0.85rem;
+			cursor: pointer;
 		}
 		
-		.tb-btn.outline {
-			background: transparent;
-			border: 1px solid var(--text-color-tertiary);
-			color: var(--text-color-secondary);
+		.tb-btn-buy {
+			flex: 1;
+			background: linear-gradient(90deg, #FF5000, #FF0036);
+			color: white;
+			border: none;
+			border-radius: 0 20px 20px 0;
+			font-weight: bold;
+			font-size: 0.85rem;
+			cursor: pointer;
 		}
-
-        /* 淘宝商品分享气泡 */
-        .message-row .message-bubble.product-share-bubble {
-            padding: 0;
-            width: 14rem;
-            overflow: hidden;
-            background: white;
-            border-radius: 8px;
-        }
-        .product-share-card {
-            display: flex;
-            flex-direction: column;
-            cursor: pointer;
-        }
-        .product-share-body {
-            display: flex;
-            padding: 0.6rem;
-            gap: 0.6rem;
-            background: #fff;
-        }
-        .product-share-thumb {
-            width: 3.5rem;
-            height: 3.5rem;
-            border-radius: 4px;
-            object-fit: cover;
-            flex-shrink: 0;
-            background: #f0f0f0;
-        }
-        .product-share-info {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            overflow: hidden;
-        }
-        .product-share-title {
-            font-size: 0.85em;
-            color: #333;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            line-height: 1.3;
-        }
-        .product-share-price {
-            font-size: 0.9em;
-            color: #FF5000;
-            font-weight: bold;
-        }
-        .product-share-footer {
-            padding: 0.3rem 0.6rem;
-            background: #fff;
-            border-top: 1px solid #f0f0f0;
-            font-size: 0.7em;
-            color: #999;
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
+		
+		/* --- 商品分享卡片专属样式 --- */
+		.product-share-card {
+			background-color: var(--card-bg-primary);
+			border-radius: 8px;
+			overflow: hidden;
+			width: 14rem;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+			display: flex;
+			flex-direction: column;
+			cursor: pointer;
+			border: 1px solid rgba(0, 0, 0, 0.05);
+		}
+		
+		.ps-content {
+			display: flex;
+			padding: 0.6rem;
+			gap: 0.6rem;
+			background-color: var(--card-bg-primary);
+		}
+		
+		.ps-img {
+			width: 3.5rem;
+			height: 3.5rem;
+			object-fit: cover;
+			border-radius: 4px;
+			background-color: #f0f0f0;
+			flex-shrink: 0;
+		}
+		
+		.ps-info {
+			flex-grow: 1;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			overflow: hidden;
+		}
+		
+		.ps-title {
+			font-size: 0.85em;
+			color: var(--text-color-primary);
+			display: -webkit-box;
+			-webkit-line-clamp: 2;
+			-webkit-box-orient: vertical;
+			overflow: hidden;
+			line-height: 1.3;
+		}
+		
+		.ps-price {
+			font-size: 0.9em;
+			color: #FF5000;
+			font-weight: bold;
+		}
+		
+		.ps-footer {
+			padding: 0.3rem 0.6rem;
+			background-color: #f9f9f9;
+			/* 浅灰底 */
+			border-top: 1px solid #eee;
+			font-size: 0.7em;
+			color: #999;
+			display: flex;
+			align-items: center;
+			gap: 0.3rem;
+		}
+		
+		/* 适配夜间模式 */
+		.forum-dark-mode .ps-footer {
+			background-color: rgba(255, 255, 255, 0.05);
+			border-top-color: rgba(255, 255, 255, 0.1);
+		}
