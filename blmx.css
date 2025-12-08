@@ -877,10 +877,10 @@
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
-			padding: 0.5rem 0.75rem;
+			padding: 0 0.75rem 0.5rem 0.75rem;
 			background: var(--wechat-bg);
 			border-bottom: 0.0625rem solid var(--header-border-primary);
-			padding-top: 2.8125rem;
+			padding-top: 3rem;
 			position: relative;
 			z-index: 10;
 		}
@@ -2528,8 +2528,9 @@
 			align-items: center;
 			padding: 0 0.75rem;
 			background: var(--header-bg-primary);
-			height: calc(2.8125rem + 1.5rem);
-			padding-top: 1.5rem;
+			height: auto;
+			padding-top: 3rem;
+			padding-bottom: 0.5rem;
 			position: relative;
 			z-index: 10;
 		}
@@ -3185,10 +3186,10 @@
 			display: grid;
 			grid-template-columns: auto 1fr auto;
 			align-items: center;
-			padding: 0.5rem 0.75rem;
+			padding: 0 0.5rem 0.5rem 0.5rem;
 			background: var(--view-bg-secondary);
 			border-bottom: 1px solid var(--moments-feed-divider);
-			padding-top: 2.8125rem;
+			padding-top: 3rem;
 			position: relative;
 			z-index: 10;
 			gap: 0.5rem;
@@ -7731,6 +7732,21 @@
 			row-gap: 1.5rem;
 		}
 		
+		/* 查手机主页标题距离调整 */
+		#check-phone-view .settings-header {
+			padding-top: 3rem;
+		}
+		
+		/* 相册标题距离调整 */
+		#cp-gallery-view .settings-header {
+			padding-top: 3rem;
+		}
+		
+		/* 足迹标题距离调整 */
+		#cp-footprints-view .settings-header {
+			padding-top: 3rem;
+		}
+		
 		.cp-app-item {
 			display: flex;
 			flex-direction: column;
@@ -8472,9 +8488,9 @@
 		/* 顶部导航栏微调 */
 		#cp-shopping-view .settings-header {
 			background-color: var(--tb-bg-color);
-			/* 顶部背景也是灰色 */
 			border-bottom: none;
-			padding-top: 3.5rem;
+			padding-top: 3rem;
+			padding-bottom: 0.5rem;
 		}
 		
 		/* 2. 购物车内容滚动区 */
@@ -8510,11 +8526,11 @@
 		.shopping-body {
 			flex-grow: 1;
 			overflow-y: auto;
-			padding: 0.5rem 0.75rem;
-			padding-bottom: 8rem !important;
+			padding: 0 0.75rem 8rem 0.75rem !important;
 			display: flex;
 			flex-direction: column;
 			gap: 0.75rem;
+			padding-top: 0.5rem !important;
 		}
 		
 		.sp-shop-card {
@@ -8950,6 +8966,8 @@
 			align-items: center;
 			padding: 0 0.2rem 0 0.8rem;
 			background-color: var(--card-bg-primary);
+			/* [新增] 关键：防止 flex 子项溢出 */
+			min-width: 0;
 		}
 		
 		.tb-search-input {
@@ -8959,6 +8977,9 @@
 			font-size: 0.9em;
 			color: var(--text-color-primary);
 			outline: none;
+			/* [新增] 关键：限制输入框宽度不超过父容器 */
+			width: 100%;
+			min-width: 0;
 		}
 		
 		.tb-camera-icon {
@@ -8976,6 +8997,11 @@
 			font-size: 0.85em;
 			font-weight: bold;
 			cursor: pointer;
+			/* [新增] 核心修复：防止被挤压 */
+			white-space: nowrap;
+			/* 强制文字不换行 */
+			flex-shrink: 0;
+			/* 禁止按钮宽度被压缩 */
 		}
 		
 		/* 2. 滚动主体 */
