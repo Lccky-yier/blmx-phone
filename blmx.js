@@ -12045,12 +12045,12 @@ SHOPPING_UPDATE:{"author":"${charId}","items":[{"shopName":"店铺A","title":"�
 							// 如果 NAI 缓存里有，那就是图片
 							if (mediaHtml.includes('<img')) isRenderedAsImage = true;
 						} else {
-							// [核心修改] 检查 item.image 是否是 URL (包含 blob: 或 http)
+							// [修改后] 添加 onerror 属性
 							if (item.image && (item.image.startsWith('http') || item.image.startsWith('blob:'))) {
-								mediaHtml = `<img src="${item.image}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
+								mediaHtml = `<img src="${item.image}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null;this.src='https://files.catbox.moe/c41va3.jpg';">`;
 								isRenderedAsImage = true;
 							} else {
-								// 否则认为是纯文本描述，使用默认背景图 + 透明文字
+								// 否则认为是纯文本描述 (这部分保持不变)
 								const safeText = (item.image || "").replace(/"/g, '&quot;');
 								mediaHtml = `<div class="sp-text-placeholder" data-full-text="${safeText}" style="background: url('https://files.catbox.moe/c41va3.jpg') center/cover no-repeat; color: transparent;">${item.image}</div>`;
 								isRenderedAsImage = false;
