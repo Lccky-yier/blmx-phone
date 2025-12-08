@@ -2013,7 +2013,7 @@
 			padding: 0.5rem 0.75rem;
 			background: var(--header-bg-primary);
 			border-bottom: 0.0625rem solid var(--header-border-primary);
-			padding-top: 2.8125rem;
+			padding-top: 3rem;
 			flex-shrink: 0;
 		}
 		
@@ -3019,7 +3019,7 @@
 			color: var(--panel-dot-color);
 		}
 		
-		/* 把所有需要隐藏滚动条的元素选择器用逗号隔开，放在一起 */
+		/* 隐藏滚动条 */
 		.wechat-body,
 		.wechat-list-body,
 		.moments-body,
@@ -3032,6 +3032,9 @@
 		.image-desc-content,
 		.event-description,
 		.recall-content,
+		.diary-body,
+		.diary-entry-body,
+		.diary-owner-list-container,
 		#livestream-chat-scroll-area {
 			-ms-overflow-style: none;
 			/* IE and Edge */
@@ -3039,7 +3042,6 @@
 			/* Firefox */
 		}
 		
-		/* 针对 Webkit 浏览器 (Chrome, Safari) 的伪元素选择器也一样 */
 		.wechat-body::-webkit-scrollbar,
 		.wechat-list-body::-webkit-scrollbar,
 		.moments-body::-webkit-scrollbar,
@@ -3052,6 +3054,9 @@
 		.image-desc-content::-webkit-scrollbar,
 		.event-description::-webkit-scrollbar,
 		.recall-content::-webkit-scrollbar,
+		.diary-body::-webkit-scrollbar,
+		.diary-entry-body::-webkit-scrollbar,
+		.diary-owner-list-container::-webkit-scrollbar,
 		#livestream-chat-scroll-area::-webkit-scrollbar {
 			display: none;
 		}
