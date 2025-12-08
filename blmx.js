@@ -12041,10 +12041,23 @@ SHOPPING_UPDATE:{"author":"${charId}","items":[{"shopName":"店铺A","title":"�
 						
 						// 获取图片
 						let mediaHtml = getNaiContentHtml(uniqueImgId, item.image);
-						if (!mediaHtml) {
-							// 【修复】修正这里的正则 replace(/"/g, ...)
-							const safeText = (item.image || "").replace(/"/g, '&quot;');
-							mediaHtml = `<div class="sp-text-placeholder" data-full-text="${safeText}" style="background: url('https://files.catbox.moe/c41va3.jpg') center/cover no-repeat; color: transparent;">${item.image}</div>`;
+						// [新增] 用于标记当前是否最终渲染成了图片
+						let isRenderedAsImage = false;
+						
+						if (mediaHtml) {
+							// 如果 NAI 缓存里有，那就是图片
+							if (mediaHtml.includes('<img')) isRenderedAsImage = true;
+						} else {
+							// [核心修改] 检查 item.image 是否是 URL (包含 blob: 或 http)
+							if (item.image && (item.image.startsWith('http') || item.image.startsWith('blob:'))) {
+								mediaHtml = `<img src="${item.image}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
+								isRenderedAsImage = true;
+							} else {
+								// 否则认为是纯文本描述，使用默认背景图 + 透明文字
+								const safeText = (item.image || "").replace(/"/g, '&quot;');
+								mediaHtml = `<div class="sp-text-placeholder" data-full-text="${safeText}" style="background: url('https://files.catbox.moe/c41va3.jpg') center/cover no-repeat; color: transparent;">${item.image}</div>`;
+								isRenderedAsImage = false;
+							}
 						}
 						
 						shopHtml += `
@@ -12093,13 +12106,18 @@ SHOPPING_UPDATE:{"author":"${charId}","items":[{"shopName":"店铺A","title":"�
 					shopCard.querySelectorAll('.sp-item-thumb').forEach(thumb => {
 						const img = thumb.querySelector('img');
 						const placeholder = thumb.querySelector('.sp-text-placeholder');
+						
 						thumb.addEventListener('click', (e) => {
 							e.stopPropagation();
-							if (img) openImageViewer(img.src);
-							if (placeholder) showDialog({
-								mode: 'alert',
-								text: placeholder.dataset.fullText
-							});
+							// [修改] 优先检查是否存在 img 标签
+							if (img) {
+								openImageViewer(img.src);
+							} else if (placeholder) {
+								showDialog({
+									mode: 'alert',
+									text: placeholder.dataset.fullText
+								});
+							}
 						});
 					});
 				});
@@ -13753,6 +13771,37 @@ TAOBAO_HOME:{"author":"${charId}","history":["搜索词1","搜索词2"],"items":
 				});
 				
 				/* ^^^^^^^^^^ 新增代码到此结束 ^^^^^^^^^^ */
+				
+				// --- [新增] 字体链接一键应用 ---
+				document.getElementById('font-url-apply-btn').addEventListener('click', async () => {
+					const urlInput = document.getElementById('font-url-input');
+					const url = urlInput.value.trim();
+					
+					if (!url) {
+						await showDialog({ mode: 'alert', text: '请输入字体链接！' });
+						return;
+					}
+					
+					// 自动生成 CSS
+					// 使用时间戳生成唯一的字体族名，防止缓存冲突
+					const fontName = `CustomFont_${Date.now()}`;
+					const cssCode = `
+@font-face {
+font-family: '${fontName}';
+src: url('${url}') format('truetype');
+font-weight: normal;
+font-style: normal;
+}
+body {
+font-family: '${fontName}', sans-serif;
+}
+`;
+					// 填入文本框
+					document.getElementById('font-css-input').value = cssCode.trim();
+					
+					// 立即应用并保存
+					applyAndSaveCustomFont();
+				});
 				
 				/* vvvvvvvv 新增：为主题导入/导出按钮绑定事件监听器 vvvvvvvv */
 				
