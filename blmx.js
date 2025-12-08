@@ -9745,45 +9745,42 @@ background-color: var(--view-bg-primary);
 				}
 			}
 			
-			/* vvvvvvvv 替换：applyCssCode 函数 (V4 - 修复空格字体名称的解析) vvvvvvvv */
-			/**
-			 * (已更新 V4) 解析 CSS 代码并将其应用到页面的核心辅助函数。
-			 * - 核心修复：使用新的正则表达式，确保带空格和引号的字体名称能被完整捕获。
-			 * @param {string} cssCode - 用户输入的完整 CSS 代码。
-			 */
+			/* vvvvvvvv 替换：applyCssCode 函数 (V5 - 终极修复：支持 @font-face) vvvvvvvv */
 			function applyCssCode(cssCode) {
-				const importRegex = /@import\s+url\((['"])(.*?)\1\);/g;
-				let imports = '';
-				let match;
-				while ((match = importRegex.exec(cssCode)) !== null) {
-					imports += match[0] + '\n';
-				}
-				
-				// --- vvvv 核心修复：使用一个更简单、更准确的正则表达式 vvvv ---
-				// 这个表达式会捕获 font-family: 和 ; 之间的所有内容。
-				const fontFamilyRegex = /font-family:\s*(.*?)\s*;/;
-				// --- ^^^^ 修复结束 ^^^^ ---
-				
-				const fontFamilyMatch = cssCode.match(fontFamilyRegex);
-				const fontName = fontFamilyMatch ? fontFamilyMatch[1] : null;
-				
-				const existingStyleTag = document.getElementById(FONT_STYLE_TAG_ID);
-				if (existingStyleTag) {
-					existingStyleTag.remove();
-				}
-				
-				if (imports) {
-					const styleTag = document.createElement('style');
+				// 1. 获取或创建样式标签
+				let styleTag = document.getElementById(FONT_STYLE_TAG_ID);
+				if (!styleTag) {
+					styleTag = document.createElement('style');
 					styleTag.id = FONT_STYLE_TAG_ID;
-					styleTag.textContent = imports;
 					document.head.appendChild(styleTag);
 				}
 				
-				if (fontName) {
-					// 现在，如果fontName是 `"Fusion..."`，它会连同引号一起被设置，这是正确的
+				// 2. [核心修复] 将用户输入的完整 CSS (包含 @font-face 和 @import) 全部注入
+				// 之前只注入了 import，导致 font-face 被丢弃
+				styleTag.textContent = cssCode;
+				
+				// 3. 提取字体名称并应用到变量
+				// 这个正则会提取 font-family: 后面直到分号的内容
+				const fontFamilyRegex = /font-family:\s*(.*?)\s*;/;
+				const fontFamilyMatch = cssCode.match(fontFamilyRegex);
+				
+				if (fontFamilyMatch && fontFamilyMatch[1]) {
+					const fontName = fontFamilyMatch[1];
+					// 设置全局变量
 					document.documentElement.style.setProperty('--custom-font-family', fontName);
+					console.log(`[Font Studio] Applied font: ${fontName}`);
 				} else {
-					document.documentElement.style.removeProperty('--custom-font-family');
+					// 如果代码里没有定义 body 的 font-family，可能用户只是定义了 font-face
+					// 尝试从 @font-face 块中提取 font-family 名字
+					const faceMatch = cssCode.match(/@font-face\s*{[^}]*font-family:\s*['"]?([^'";]+)['"]?/);
+					if (faceMatch && faceMatch[1]) {
+						const extractedName = `'${faceMatch[1]}'`;
+						document.documentElement.style.setProperty('--custom-font-family', extractedName);
+						console.log(`[Font Studio] Extracted font-face name: ${extractedName}`);
+					} else {
+						// 如果实在找不到，就移除变量，回退默认
+						document.documentElement.style.removeProperty('--custom-font-family');
+					}
 				}
 			}
 			/* ^^^^^^^^^^ 替换代码到此结束 ^^^^^^^^^^ */
@@ -12498,7 +12495,7 @@ TAOBAO_HOME:{"author":"${charId}","history":["搜索词1","搜索词2"],"items":
 					if (targetId) {
 						currentCheckPhoneTargetId = targetId;
 						const name = getDisplayName(targetId, null);
-						document.getElementById('check-phone-title').textContent = `${name} 的手机`;
+						document.getElementById('check-phone-title').textContent = `${name}的手机`;
 						navigateTo('checkPhone');
 					}
 				});
