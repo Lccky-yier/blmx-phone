@@ -1651,13 +1651,17 @@ ${vGroupListText}
 			/* ^^^^^^^^^^ 替换代码到此结束 ^^^^^^^^^^ */
 			
 			function getDisplayName(id, convoId) {
+				// [核心修复] 无论是 'user' 还是 '{{user}}'，统统返回当前设定的昵称
 				if (id === 'user' || id === '{{user}}') {
 					if (convoId) {
 						const convo = conversations.find(c => c.id === convoId);
-						if (convo && convo.type === 'group' && convo.nicknames && (convo.nicknames['user'] || convo.nicknames['{{user}}'])) {
-							return convo.nicknames['user'] || convo.nicknames['{{user}}'];
+						// 如果在群里设置了群昵称，优先显示群昵称
+						if (convo && convo.type === 'group' && convo.nicknames) {
+							if (convo.nicknames['user']) return convo.nicknames['user'];
+							if (convo.nicknames['{{user}}']) return convo.nicknames['{{user}}'];
 						}
 					}
+					// 否则返回全局昵称
 					return userProfile.name;
 				}
 				
@@ -1875,7 +1879,7 @@ ${vGroupListText}
 				} else if (viewName === 'me') {
 					document.getElementById('me-view-avatar').src = getAvatar('user');
 					document.getElementById('me-view-name').textContent = getDisplayName('user', null);
-					document.getElementById('me-view-id').textContent = `ID: {{user}}`;
+					document.getElementById('me-view-id').textContent = `ID: ${userProfile.name}`;
 				} else if (viewName === 'moments') {
 					currentMomentsAuthorId = options.authorId || null;
 					document.getElementById('post-moment-btn').style.display = (currentMomentsAuthorId && currentMomentsAuthorId !== 'user') ? 'none' : 'block';
@@ -12363,7 +12367,8 @@ SHOPPING_UPDATE:{"author":"${charId}","items":[{"shopName":"店铺A","title":"�
 				}
 				
 				const receiptData = {
-					payer: '{{user}}',
+					// [修改] 直接使用当前缓存的用户名
+					payer: userProfile.name,
 					receiver: charId,
 					items: paidItems,
 					total: totalAmount.toFixed(2),
@@ -19171,4 +19176,3 @@ AMA_PAIR:{"question":"这里是匿名用户提出的问题内容","answer":"这�
 			a.click();
 			document.body.removeChild(a);
 		};
-	
