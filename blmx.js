@@ -1352,7 +1352,9 @@ ${vGroupListText}
 			let callPartner = { id: null, name: null, avatar: null }; // 存储通话对象信息
 			let vgroupAvatarCache = new Map();
 			let currentMusicSessionLogs = []; // 存储结构: { sender: 'me'|'them', text: string, time: string }
-			
+			// --- 全局通知队列系统变量 ---
+			const notificationQueue = []; // 存放等待弹出的消息
+			let isNotificationShowing = false; // 标记当前是否正在显示弹窗
 			/* vvvvvvvv 新增：视频通话-画面历史记录核心逻辑 (V1) vvvvvvvv */
 			
 			// 1. 全局变量：存储画面历史
@@ -1676,6 +1678,116 @@ ${vGroupListText}
 				}
 				const contact = contacts.find(c => c.id === id);
 				return (contact && contact.avatar) ? contact.avatar : 'https://files.catbox.moe/bialj8.jpeg';
+			}
+			
+			/**
+			 * 入口函数：将通知加入队列
+			 */
+			function showBannerNotification(targetId, title, text, avatar = null) {
+				// 1. 将消息推入队列
+				notificationQueue.push({
+					targetId,
+					title,
+					text,
+					avatar
+				});
+				
+				// 2. 尝试处理队列 (如果当前没人排队，就开始)
+				processNotificationQueue();
+			}
+			
+			/**
+			 * 队列处理器：控制弹窗的显示节奏
+			 */
+			function processNotificationQueue() {
+				// 如果当前正在显示，或者队列空了，就停止
+				if (isNotificationShowing || notificationQueue.length === 0) return;
+				
+				// 标记为忙碌
+				isNotificationShowing = true;
+				
+				// 取出最早的一条消息
+				const data = notificationQueue.shift();
+				
+				// 调用渲染函数
+				renderBannerDOM(data);
+			}
+			/**
+			 * 渲染并显示单条通知
+			 */
+			function renderBannerDOM(data) {
+				const container = document.getElementById('notification-area');
+				
+				// 创建元素
+				const banner = document.createElement('div');
+				banner.className = 'banner-notification';
+				if (document.body.classList.contains('forum-dark-mode')) {
+					banner.classList.add('dark');
+				}
+				
+				// 图标判断 logic (保持不变)
+				let iconHtml = '<i class="fab fa-weixin"></i>';
+				let iconBg = 'var(--wechat-green-icon)';
+				if (data.targetId === 'moments_feed') {
+					iconHtml = '<i class="fas fa-camera-retro"></i>';
+					iconBg = '#4C4C4C';
+				}
+				
+				// 内容预处理
+				let previewText = data.text || '';
+				if (previewText.startsWith('[图片')) previewText = '[图片]';
+				else if (previewText.startsWith('[语音')) previewText = '[语音]';
+				else if (previewText.startsWith('[红包')) previewText = '[红包]';
+				
+				banner.innerHTML = `
+        <div class="banner-icon" style="background-color: ${iconBg};">
+            ${iconHtml}
+        </div>
+        <div class="banner-content">
+            <div class="banner-title">
+                <span>${data.title}</span>
+                <span class="banner-time">现在</span>
+            </div>
+            <div class="banner-message">${previewText}</div>
+        </div>
+    `;
+				
+				// --- 定义结束并播放下一条的逻辑 ---
+				const finishAndNext = () => {
+					// 1. 移除当前元素
+					if (banner.parentNode) banner.remove();
+					// 你可以修改这个数字来控制“慢一点”的程度
+					setTimeout(() => {
+						isNotificationShowing = false;
+						processNotificationQueue(); // 递归调用，处理下一条
+					}, 500);
+				};
+				
+				// --- 点击事件 ---
+				banner.addEventListener('click', () => {
+					notificationQueue.length = 0;
+					if (data.targetId === 'moments_feed') {
+						navigateTo('moments');
+						renderMomentsFeed(null);
+					} else {
+						navigateTo('wechatChat', { conversationId: data.targetId });
+					}
+					finishAndNext();
+				});
+				
+				container.appendChild(banner);
+				
+				// --- 自动消失计时器 ---
+				setTimeout(() => {
+					// 如果元素还在页面上（没被点掉）
+					if (banner.parentNode) {
+						banner.style.animation = 'banner-slide-out 0.5s ease forwards';
+						// 动画播完后，执行清理和下一条
+						banner.addEventListener('animationend', () => {
+							finishAndNext();
+						});
+					}
+				}, 3000);
 			}
 			
 			/* vvvvvvvv 替换：navigateTo 函数 (V17 - 移除私信角标更新) vvvvvvvv */
@@ -6051,14 +6163,27 @@ WEIBO_POST:{"author":"理科男不懂爱","category":"life","title":"新买的�
 						if (!data.momentId) {
 							data.momentId = `moment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 						}
+						if (data.image_type === 'desc' && data.image) {
+							processEntryWithNAI(data.momentId, data.image, 'moment');
+						}
 						blmxManager.addEntry({ key, data });
-						if (data.author !== 'user') {
+						
+						// --- [修改] 这里增加了 && data.author !== '{{user}}' ---
+						if (data.author !== 'user' && data.author !== '{{user}}') {
 							const momentsConvo = conversations.find(c => c.id === 'moments_feed');
 							if (momentsConvo) {
 								momentsConvo.unread = (momentsConvo.unread || 0) + 1;
 								updateConversationTimestamp('moments_feed', data.timestamp);
 							}
+							
+							// === 朋友圈弹窗提醒 ===
+							if (!document.getElementById('moments-view').classList.contains('active')) {
+								const authorName = getDisplayName(data.author, null);
+								const contentText = data.text ? data.text : '[图片动态]';
+								showBannerNotification('moments_feed', authorName, contentText);
+							}
 						}
+						lastProcessedMomentId = data.momentId;
 						break;
 					case 'CHAR_COMMENT':
 					case 'CHAR_LIKE':
@@ -6592,6 +6717,28 @@ WEIBO_POST:{"author":"理科男不懂爱","category":"life","title":"新买的�
 				if (finalTargetConversationId !== currentConversationId || !document.getElementById('wechat-chat-view').classList.contains('active')) {
 					if (!conversation.unread) conversation.unread = 0;
 					conversation.unread++;
+					
+					// === [修改] 优化群聊显示逻辑 ===
+					if (!newEntry.isFailed) {
+						let bannerTitle = conversation.name;
+						let bannerText = newEntry.content;
+						
+						// 1. 如果是私聊：标题=对方名字，内容=消息
+						if (conversation.type === 'single') {
+							const otherId = conversation.members.find(m => m !== 'user');
+							bannerTitle = getDisplayName(otherId, conversation.id);
+						}
+						// 2. 如果是群聊/虚拟群：标题=群名，内容=“发送者: 消息”
+						else {
+							// 获取发送者的群昵称
+							const senderName = getDisplayName(newEntry.sender, conversation.id);
+							bannerTitle = conversation.name; // 标题显示群名
+							bannerText = `${senderName}: ${newEntry.content}`; // 内容显示“名字: 内容”
+						}
+						
+						showBannerNotification(conversation.id, bannerTitle, bannerText);
+					}
+					// === [修改结束] ===
 				}
 			}
 			/* ^^^^^^^^^^ 替换代码到此结束 ^^^^^^^^^^ */
@@ -19009,4 +19156,3 @@ AMA_PAIR:{"question":"这里是匿名用户提出的问题内容","answer":"这�
 			a.click();
 			document.body.removeChild(a);
 		};
-	
