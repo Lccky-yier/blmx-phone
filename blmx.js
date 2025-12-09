@@ -12107,7 +12107,7 @@ SHOPPING_UPDATE:{"author":"${charId}","items":[{"shopName":"店铺A","title":"�
 				}
 			}
 			
-			// --- 2. 渲染购物车界面 (修复版：增加空状态处理) ---
+			// --- 2. 渲染购物车界面 (修复版：完美处理首次进入空状态) ---
 			function renderShoppingApp(charId) {
 				const view = document.getElementById('cp-shopping-view');
 				const container = view.querySelector('.shopping-body');
@@ -12120,48 +12120,57 @@ SHOPPING_UPDATE:{"author":"${charId}","items":[{"shopName":"店铺A","title":"�
 					e.type === 'shopping_update' && e.author === charId
 				);
 				
-				// 2. 清空并准备
+				// 2. 准备数据：如果找不到记录，或者记录里没有items，就默认为空数组
+				// 【核心修复】这里加了容错处理，防止 latestEntry 为 undefined 时报错
+				const items = (latestEntry && latestEntry.content && latestEntry.content.items) ? latestEntry.content.items : [];
+				
+				// 3. 清空容器并更新标题
 				container.innerHTML = '';
-				const items = latestEntry.content.items || []; // 确保是数组
 				const name = getDisplayName(charId, null);
 				view.querySelector('.settings-header .title').textContent = `${name}的购物车 (${items.length})`;
 				
-				// --- 【修复核心】处理空购物车状态 ---
+				// 4. 【核心逻辑】处理空购物车状态 (首次进入或删除完后)
 				if (items.length === 0) {
 					container.innerHTML = `
-<div style="height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; color:var(--text-color-tertiary); gap:1rem; margin-top: 5rem;">
-	<i class="fas fa-shopping-cart" style="font-size:3rem; opacity:0.3;"></i>
-	<p style="margin:0;">购物车是空的</p>
-	<button id="manual-gen-shop-btn" class="studio-btn primary" style="font-size:0.85em; padding:0.4rem 1rem;">
-		<i class="fas fa-magic"></i> 帮TA加购商品
-	</button>
-</div>
-`;
+            <div style="height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; color:var(--text-color-tertiary); gap:1rem; margin-top: 5rem;">
+                <i class="fas fa-shopping-cart" style="font-size:3rem; opacity:0.3;"></i>
+                <p style="margin:0;">购物车是空的</p>
+                <button id="manual-gen-shop-btn" class="studio-btn primary" style="font-size:0.85em; padding:0.4rem 1rem;">
+                    <i class="fas fa-magic"></i> 帮TA加购商品
+                </button>
+            </div>
+        `;
+					
 					// 绑定手动生成按钮事件
 					const genBtn = document.getElementById('manual-gen-shop-btn');
 					if (genBtn) {
 						genBtn.addEventListener('click', () => triggerShoppingGeneration(charId));
 					}
-					// 更新底部结算栏状态
+					
+					// 更新底部结算栏状态 (禁用结算按钮)
 					if (totalPriceEl) totalPriceEl.textContent = '¥0.00';
 					if (checkoutBtn) {
 						checkoutBtn.textContent = '购物车为空';
 						checkoutBtn.disabled = true;
 						checkoutBtn.style.opacity = '0.6';
 					}
-					return;
+					
+					// 如果全选按钮存在，取消勾选
+					if (selectAllBtn) selectAllBtn.checked = false;
+					
+					return; // 结束函数，不执行后面的渲染逻辑
 				}
 				
-				// 按店铺分组
+				// 5. (以下是有商品时的渲染逻辑) 按店铺分组
 				const groupedItems = {};
 				items.forEach((item, index) => {
 					item._index = index;
-					const shopName = item.shopName || "未知店铺"; // 防止无店铺名报错
+					const shopName = item.shopName || "未知店铺";
 					if (!groupedItems[shopName]) groupedItems[shopName] = [];
 					groupedItems[shopName].push(item);
 				});
 				
-				// 3. 渲染店铺列表
+				// 渲染店铺列表
 				Object.keys(groupedItems).forEach(shopName => {
 					const shopItems = groupedItems[shopName];
 					
@@ -12169,69 +12178,66 @@ SHOPPING_UPDATE:{"author":"${charId}","items":[{"shopName":"店铺A","title":"�
 					shopCard.className = 'sp-shop-card';
 					
 					let shopHtml = `
-<div class="sp-shop-header">
-	<i class="fas fa-store sp-shop-icon taobao"></i>
-	<span class="sp-shop-name">${shopName} <i class="fas fa-chevron-right" style="font-size:0.7em; color:#ccc;"></i></span>
-</div>
-`;
+            <div class="sp-shop-header">
+                <i class="fas fa-store sp-shop-icon taobao"></i>
+                <span class="sp-shop-name">${shopName} <i class="fas fa-chevron-right" style="font-size:0.7em; color:#ccc;"></i></span>
+            </div>
+        `;
 					
 					shopItems.forEach(item => {
 						const globalIndex = item._index;
-						const uniqueImgId = `${latestEntry.id}_img_${globalIndex}`;
+						// 兼容旧数据的 ID 生成
+						const uniqueImgId = (latestEntry && latestEntry.id) ? `${latestEntry.id}_img_${globalIndex}` : `temp_img_${globalIndex}`;
 						
-						// 获取图片
+						// 获取图片 HTML
 						let mediaHtml = getNaiContentHtml(uniqueImgId, item.image);
-						// [新增] 用于标记当前是否最终渲染成了图片
-						let isRenderedAsImage = false;
+						let isTextOnly = false;
 						
 						if (mediaHtml) {
-							// 如果 NAI 缓存里有，那就是图片
-							if (mediaHtml.includes('<img')) isRenderedAsImage = true;
+							if (mediaHtml.includes('<img')) {
+								// 如果 NAI 返回了图片
+							}
 						} else {
-							// [修改后] 添加 onerror 属性
+							// 检查 item.image 是否是链接
 							if (item.image && (item.image.startsWith('http') || item.image.startsWith('blob:'))) {
 								mediaHtml = `<img src="${item.image}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null;this.src='https://files.catbox.moe/c41va3.jpg';">`;
-								isRenderedAsImage = true;
 							} else {
-								// 否则认为是纯文本描述 (这部分保持不变)
+								// 纯文本描述
+								isTextOnly = true;
 								const safeText = (item.image || "").replace(/"/g, '&quot;');
 								mediaHtml = `<div class="sp-text-placeholder" data-full-text="${safeText}" style="background: url('https://files.catbox.moe/c41va3.jpg') center/cover no-repeat; color: transparent;">${item.image}</div>`;
-								isRenderedAsImage = false;
 							}
 						}
 						
 						shopHtml += `
-<div class="sp-item" data-item-index="${globalIndex}" data-price="${item.price || 0}" data-title="${item.title || '未知商品'}">
-	<!-- 复选框 -->
-	<input type="checkbox" class="sp-checkbox item-checkbox" style="margin-top: 2.5rem;">
-	
-	<div class="sp-item-thumb">
-		${mediaHtml}
-	</div>
-	
-	<div class="sp-item-details">
-		<div class="sp-item-title">${item.title || '无标题'}</div>
-		
-		<div class="sp-item-monologue">备注: ${item.note || ''}</div>
-		
-		<div class="sp-item-reason">${item.reason || ''}</div>
-		<div class="sp-price-row">
-			<span class="sp-price">${item.price || '0.00'}</span>
-			<div class="sp-quantity">
-				<span class="sp-qty-btn">-</span>
-				<span class="sp-qty-num">1</span>
-				<span class="sp-qty-btn">+</span>
-			</div>
-		</div>
-	</div>
-</div>
-`;
+            <div class="sp-item" data-item-index="${globalIndex}" data-price="${item.price || 0}" data-title="${item.title || '未知商品'}">
+                <input type="checkbox" class="sp-checkbox item-checkbox" style="margin-top: 2.5rem;">
+                
+                <div class="sp-item-thumb">
+                    ${mediaHtml}
+                </div>
+                
+                <div class="sp-item-details">
+                    <div class="sp-item-title">${item.title || '无标题'}</div>
+                    <div class="sp-item-monologue">备注: ${item.note || ''}</div>
+                    <div class="sp-item-reason">${item.reason || ''}</div>
+                    <div class="sp-price-row">
+                        <span class="sp-price">${item.price || '0.00'}</span>
+                        <div class="sp-quantity">
+                            <span class="sp-qty-btn">-</span>
+                            <span class="sp-qty-num">1</span>
+                            <span class="sp-qty-btn">+</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
 					});
 					
 					shopCard.innerHTML = shopHtml;
 					container.appendChild(shopCard);
 					
-					// --- 绑定事件：点击备注行弹出完整内容 ---
+					// 绑定事件：点击备注
 					shopCard.querySelectorAll('.sp-item-monologue').forEach((el, i) => {
 						el.addEventListener('click', (e) => {
 							e.stopPropagation();
@@ -12242,14 +12248,13 @@ SHOPPING_UPDATE:{"author":"${charId}","items":[{"shopName":"店铺A","title":"�
 						});
 					});
 					
-					// --- 绑定事件：图片点击 ---
+					// 绑定事件：点击图片
 					shopCard.querySelectorAll('.sp-item-thumb').forEach(thumb => {
 						const img = thumb.querySelector('img');
 						const placeholder = thumb.querySelector('.sp-text-placeholder');
 						
 						thumb.addEventListener('click', (e) => {
 							e.stopPropagation();
-							// [修改] 优先检查是否存在 img 标签
 							if (img) {
 								openImageViewer(img.src);
 							} else if (placeholder) {
@@ -12262,7 +12267,7 @@ SHOPPING_UPDATE:{"author":"${charId}","items":[{"shopName":"店铺A","title":"�
 					});
 				});
 				
-				// 4. 复选框与总价计算逻辑
+				// 6. 底部复选框与总价计算逻辑
 				const itemCheckboxes = container.querySelectorAll('.item-checkbox');
 				
 				const updateTotal = () => {
@@ -12279,22 +12284,28 @@ SHOPPING_UPDATE:{"author":"${charId}","items":[{"shopName":"店铺A","title":"�
 					if (totalPriceEl) totalPriceEl.textContent = '¥' + total.toFixed(2);
 					
 					if (checkoutBtn) {
-						if (count === 0) {
-							checkoutBtn.textContent = `请选择`;
-							checkoutBtn.disabled = true;
-							checkoutBtn.style.opacity = '0.6';
-						} else {
-							checkoutBtn.textContent = `帮TA付 (${count})`;
-							checkoutBtn.disabled = false;
-							checkoutBtn.style.opacity = '1';
+						// 只有当不是“管理模式”时才更新结算按钮文字
+						const manageBtn = document.getElementById('cp-shopping-manage-btn');
+						const isManageMode = manageBtn && manageBtn.textContent === '完成';
+						
+						if (!isManageMode) {
+							if (count === 0) {
+								checkoutBtn.textContent = `请选择`;
+								checkoutBtn.disabled = true;
+								checkoutBtn.style.opacity = '0.6';
+							} else {
+								checkoutBtn.textContent = `帮TA付 (${count})`;
+								checkoutBtn.disabled = false;
+								checkoutBtn.style.opacity = '1';
+							}
 						}
 					}
 				};
 				
 				itemCheckboxes.forEach(cb => cb.addEventListener('change', updateTotal));
 				
+				// 如果全选按钮存在，重新绑定事件 (防止重复绑定)
 				if (selectAllBtn) {
-					// 移除旧监听器避免重复（克隆节点法）
 					const newSelectAllBtn = selectAllBtn.cloneNode(true);
 					selectAllBtn.parentNode.replaceChild(newSelectAllBtn, selectAllBtn);
 					
@@ -12306,10 +12317,12 @@ SHOPPING_UPDATE:{"author":"${charId}","items":[{"shopName":"店铺A","title":"�
 				}
 				
 				if (checkoutBtn) {
-					checkoutBtn.onclick = () => handleShoppingCheckout(charId, latestEntry.id);
+					checkoutBtn.onclick = () => handleShoppingCheckout(charId, latestEntry ? latestEntry.id : null);
 				}
+				
 				updateTotal();
 			}
+			/* ^^^^^^^^^^ 替换代码到此结束 ^^^^^^^^^^ */
 			
 			// --- 3. 购物车结算逻辑 (支付并生成回执) ---
 			async function handleShoppingCheckout(charId, entryId) {
@@ -19158,3 +19171,4 @@ AMA_PAIR:{"question":"这里是匿名用户提出的问题内容","answer":"这�
 			a.click();
 			document.body.removeChild(a);
 		};
+	
