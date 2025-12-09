@@ -1536,11 +1536,11 @@
 		
 		/* 10. 分割线颜色适配*/
 		.message-row.them .voice-text-content.expanded {
-			border-top-color: rgba(0, 0, 0, 0.35);
+			border-top-color: rgba(0, 0, 0, 0.1);
 		}
 		
 		.message-row.me .voice-text-content.expanded {
-			border-top-color: rgba(0, 0, 0, 0.35);
+			border-top-color: rgba(0, 0, 0, 0.1);
 		}
 		
 		.image-desc-content {
@@ -9932,4 +9932,138 @@
 		.forum-dark-mode .ps-footer {
 			background-color: rgba(255, 255, 255, 0.05);
 			border-top-color: rgba(255, 255, 255, 0.1);
+		}
+		
+		/* --- 全局通知横幅 (Heads-up Notification) --- */
+		#notification-area {
+			position: absolute;
+			top: 3.5rem;
+			/* 在状态栏下方 */
+			left: 0;
+			width: 100%;
+			padding: 0 0.8rem;
+			box-sizing: border-box;
+			z-index: 150;
+			/* 保证在普通页面之上，但在弹窗之下 */
+			pointer-events: none;
+			/* 让鼠标能穿透空白区域点击下面的APP */
+			display: flex;
+			flex-direction: column;
+			gap: 0.6rem;
+			/* 气泡之间的间距 */
+		}
+		
+		.banner-notification {
+			/* 核心：磨砂玻璃效果 */
+			background: rgba(235, 235, 235, 0.75);
+			/* 高透的浅灰色 */
+			backdrop-filter: blur(15px) saturate(180%);
+			/* 模糊背景 + 增加饱和度(让透出的颜色更鲜艳) */
+			-webkit-backdrop-filter: blur(15px) saturate(180%);
+			
+			border: 1px solid rgba(255, 255, 255, 0.4);
+			/* 极淡的白边，增加立体感 */
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+			/* 柔和的阴影 */
+			
+			border-radius: 14px;
+			/* iOS 风格圆角 */
+			padding: 0.8rem 1rem;
+			display: flex;
+			align-items: center;
+			gap: 0.8rem;
+			
+			pointer-events: auto;
+			/* 气泡本身可以点击 */
+			cursor: pointer;
+			transition: transform 0.2s ease;
+			
+			/* 进场动画 */
+			animation: banner-slide-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+			color: #000;
+			/* 默认黑色文字 */
+		}
+		
+		/* 夜间模式适配 (可选，如果你的网页有夜间模式类) */
+		.forum-dark-mode .banner-notification,
+		.banner-notification.dark {
+			background: rgba(40, 40, 40, 0.75);
+			border: 1px solid rgba(255, 255, 255, 0.1);
+			color: #fff;
+		}
+		
+		.banner-notification:active {
+			transform: scale(0.98);
+			/* 点击时微缩 */
+		}
+		
+		/* 左侧图标容器 */
+		.banner-icon {
+			width: 2.2rem;
+			height: 2.2rem;
+			border-radius: 6px;
+			background-color: var(--wechat-green-icon);
+			/* 微信绿 */
+			color: white;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			font-size: 1.2rem;
+			flex-shrink: 0;
+		}
+		
+		/* 中间文字区 */
+		.banner-content {
+			flex-grow: 1;
+			overflow: hidden;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+		}
+		
+		.banner-title {
+			font-size: 0.9em;
+			font-weight: 600;
+			margin-bottom: 0.1rem;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			display: flex;
+			justify-content: space-between;
+			/* 让时间和标题两端对齐 */
+		}
+		
+		.banner-time {
+			font-size: 0.8em;
+			font-weight: normal;
+			opacity: 0.5;
+			margin-left: 0.5rem;
+		}
+		
+		.banner-message {
+			font-size: 0.85em;
+			opacity: 0.7;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		
+		/* 动画关键帧 */
+		@keyframes banner-slide-in {
+			from {
+				opacity: 0;
+				transform: translateY(-20px) scale(0.95);
+			}
+			
+			to {
+				opacity: 1;
+				transform: translateY(0) scale(1);
+			}
+		}
+		
+		@keyframes banner-slide-out {
+			to {
+				opacity: 0;
+				transform: translateY(-20px);
+			}
 		}
