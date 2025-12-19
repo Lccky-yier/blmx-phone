@@ -384,57 +384,53 @@ ${g}"><i class="fas fa-user-friends"></i></span>`}}else p=`<span class="privacy-
 									<div class="weibo-comment-actions" data-action="reply" data-comment-id="${e.commentId}" data-author-name="${d.name}" title="回复"><i class="far fa-comment-alt"></i> <span>回复</span></div>
 									<div class="weibo-comment-actions"><i class="far fa-thumbs-up"></i> <span>${e.likes||0}</span></div>
 								</div>
-							</div>`}return C.innerHTML=P+H+M,C},p=e.text&&""!==e.text.trim(),u=e.image&&""!==e.image.trim()&&"none"!==e.image_type;if(p&&u){let g={...e,image:null,image_type:"none"},y=m(g,c,!1,!1);a.appendChild(y);let f={...e,text:"",content:""},h=m(f,0,!1,!0);a.appendChild(h)}else{let b=m(e,c);a.appendChild(b)}}async function eC(e){let t=document.getElementById("forum-profile-view"),a=t.querySelector(".profile-avatar"),i=t.querySelector(".profile-name"),n=t.querySelector(".profile-signature"),l=t.querySelector(".profile-stats"),r=document.getElementById("profile-tab-posts"),o=document.getElementById("profile-tab-ama"),s=document.getElementById("profile-tab-footprints"),d="user"===e||"{{user}}"===e?A:_.find(t=>t.id===e);if(!d){console.error(`[Forum Profile] Render failed: Cannot find contact with ID: ${e}`),i.textContent="用户不存在";return}let c="user"===d.id||"{{user}}"===d.id;a.src=ec(d.id),i.textContent=ed(d.id,null),n.textContent=d.signature||"这个人很懒，什么都没留下。";let m=O.posts.filter(e=>e.author===d.id||c&&"{{user}}"===e.author).length;l.innerHTML=`
-<div><strong>${m}</strong> <span>帖子</span></div>
-<div><strong>${Math.floor(2e3*Math.random())}</strong> <span>关注者</span></div>
-<div><strong>${Math.floor(200*Math.random())}</strong> <span>正在关注</span></div>
-`,r.innerHTML="";let p=O.posts.filter(e=>e.author===d.id||c&&"{{user}}"===e.author).sort((e,t)=>new Date(t.timestamp)-new Date(e.timestamp));p.length>0?p.forEach(e=>{let t=document.createElement("div");t.className="post-card",t.dataset.postId=e.postId;let a="",i=e.title||"无标题帖子",n=i.match(/^(?:\[|【)([^\]】]+)(?:\]|】)\s*(.*)$/);if(n){let l=n[1],o=n[2];a=`
-					<span class="profile-post-prefix-tag">${l}</span>
-					<span class="profile-post-title-text">${o}</span>
-				`}else a=`<span class="profile-post-title-text">${i}</span>`;let s=e.text||e.content||"",d=/#([^#\s]+)/g,c=[...new Set([...s.matchAll(d)].map(e=>e[1]))],m=c.length>0?`<div class="profile-post-hashtags">
-					${c.map(e=>`<span class="hashtag">#${e}</span>`).join("")}
-				</div>`:"",p=s.replace(d,"").trim(),u=(p||"(无正文内容)").substring(0,100)+(p.length>100?"...":"");t.innerHTML=`
-				<h3 class="title">${a}</h3>
-				<div class="profile-post-content">
-					<p class="excerpt">${u}</p>
-				</div>
-				${m} 
-				<div class="post-card-footer">
-					<span class="timestamp">${eT(e.timestamp)}</span>
-					<div class="post-card-stats" style="display: flex; gap: 0.8rem;">
-						<span><i class="fas fa-share"></i> ${e.retweets||0}</span>
-						<span><i class="far fa-comment-alt"></i> ${(O.comments[e.postId]||[]).length}</span>
-						<span><i class="far fa-thumbs-up"></i> ${e.likes||0}</span>
-					</div>
-				</div>
-			`,r.appendChild(t)}):r.innerHTML='<p style="text-align:center; color: var(--forum-text-secondary); padding: 1rem;">TA还没有发布过任何帖子。</p>';let u="user"===d.id||"{{user}}"===d.id;if(o.innerHTML="",u){let g=document.createElement("p");g.style.cssText="text-align:center; color: var(--forum-text-secondary); padding: 1rem;",g.textContent="TA还没有开通问答栏目。",o.appendChild(g)}else{let y=document.createElement("div");y.className="ama-input-box",y.innerHTML=`
-			<div class="ama-input-header">匿名问我答</div>
-			<div class="ama-input-body">
-				<textarea rows="2" placeholder="输入你的问题..."></textarea>
-			</div>
-			<div class="ama-input-footer">
-				<span id="view-more-ama-btn">🔍 查看更多</span>
-				<button><i class="fas fa-paper-plane"></i></button>
-			</div>
-		`,o.appendChild(y)}let f=document.createElement("div");if(f.className="ama-qna-list",o.appendChild(f),w){let h=w.logEntries.filter(t=>"AMA_PAIR"===t.key&&(t.data.author===e||c&&"{{user}}"===t.data.author)).sort((e,t)=>new Date(t.data.timestamp)-new Date(e.data.timestamp));if(u&&h.length>0){let b=o.querySelector("p");b&&(b.style.display="none")}h.forEach(e=>{let t=e.data,a=document.createElement("div");a.className="qna-card",a.innerHTML=`
-				<div class="question"><p>${t.question.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</p></div>
-				<div class="answer">
-					<div class="answer-content">
-						<p class="author">${ed(t.author,null)}</p>
-						<p>${t.answer.replace(/\n/g,"<br>")}</p>
-					</div>
-				</div>
-			`,f.appendChild(a)})}s.innerHTML="";let v=[];for(let E in O.comments)O.comments[E].forEach(e=>{(e.author===d.id||c&&"{{user}}"===e.author)&&v.push({...e,post:O.posts.find(e=>e.postId===E)})});v.sort((e,t)=>new Date(t.timestamp)-new Date(e.timestamp)),v.length>0?v.forEach(e=>{if(!e.post)return;let t=e.text,a=t.match(/\[引用:"(?:.*?):\s*(?:[\s\S]*?)"\]([\s\S]*)/);a&&a[1]&&(t=a[1].trim());let i=document.createElement("div");i.className="footprint-item",i.innerHTML=`
-				<div class="icon"><i class="far fa-comment-alt"></i></div>
-				<div class="content">
-				<p class="action">
-					在帖子
-					<span class="post-link" data-post-id="${e.post.postId}">${e.post.title}</span>
-					中发表了评论
-				</p>
-				<div class="quote">${t.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>
-				</div>
-			`,s.appendChild(i)}):s.innerHTML='<p style="text-align:center; color: var(--forum-text-secondary); padding: 1rem;">TA还没有发表过任何评论。</p>'}function eA(e){let t=O.posts.find(t=>t.postId===e);if(!t)return;let a=document.getElementById("weibo-detail-view"),i=a.querySelector(".weibo-detail-body"),n=a.querySelector(".weibo-detail-title");i.innerHTML="",J.clear(),n.textContent="";let r=t.author;void 0===t.likes&&(t.likes=Math.floor(1e3*Math.random())),void 0===t.retweets&&(t.retweets=Math.floor(51*Math.random())),void 0===t.bookmarks&&(t.bookmarks=Math.floor(21*Math.random()));let o=(t,a,i=!1,n=!1)=>{let o=e=>{let t=e.replace(/</g,"&lt;").replace(/>/g,"&gt;");return t.replace(/@([^\s@#]+)/g,(e,t)=>`<span class="mention" data-username="${t}">${e}</span>`)},s=t.author,d;if(void 0===t.likes&&(t.likes=Math.floor(10*Math.random())),"user"===s||"{{user}}"===s){let c=K(233);d={...A,name:ed("user"),avatar:ec("user"),postCount:233,title:c.text,titleColor:c.color}}else{let m=_.find(e=>e.id===s);if(m){let p=Math.floor(701*Math.random())+300,u=K(p);d={...m,name:ed(m.id),avatar:ec(m.id),postCount:p,title:u.text,titleColor:u.color}}else d=Z(s)}let g="",y=t.text||t.content||"";if(t.replyTo){let f=(O.comments[e]||[]).find(e=>e.commentId===t.replyTo),h;if(f){let b=ed(f.author,null),v=f.text;h=`<div class="forum-quote-block"><div class="quote-author">@${b}</div><div class="quote-content">${v.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div></div>`}else h=`<div class="forum-quote-block"><div class="quote-content">[原消息已删除]</div></div>`;let w=o(y);g=h+w}else{let E=y.match(/\[引用:"(.*?):\s*([\s\S]*?)"\]([\s\S]*)/);if(E){let I=E[1].trim(),x=E[2].trim(),$=E[3].trim(),L=`<div class="forum-quote-block"><div class="quote-author">${o("@"+I)}</div><div class="quote-content">${x.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div></div>`,k=o($);g=L+k}else g=o(y)}let T="";if(t.image&&t.image_type){let S="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-top: 0.8rem; display: block;";if("url"===t.image_type)T=`<img src="${t.image}" class="post-media-image" style="${S}">`;else if("desc"===t.image_type){let B=l(t.commentId||t.postId,t.image);T=B?`<div style="${S} overflow: hidden; position: relative;">${B}</div>`:`<div class="forum-image-description">${t.image.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>`}}let D=document.createElement("div");D.className=i?"forum-post-card is-op":n?"forum-post-card is-image-attachment":"forum-post-card",D.dataset.commentId=t.commentId||"post-op",D.dataset.authorName=d.name;let C=!1===t.isRead?'<div class="unread-indicator"></div>':"";if(i){let M=`
+							</div>`}return C.innerHTML=P+H+M,C},p=e.text&&""!==e.text.trim(),u=e.image&&""!==e.image.trim()&&"none"!==e.image_type;if(p&&u){let g={...e,image:null,image_type:"none"},y=m(g,c,!1,!1);a.appendChild(y);let f={...e,text:"",content:""},h=m(f,0,!1,!0);a.appendChild(h)}else{let b=m(e,c);a.appendChild(b)}}async function eC(e){let t=document.getElementById("forum-profile-view"),a=t.querySelector(".profile-avatar"),i=t.querySelector(".profile-name"),n=t.querySelector(".profile-post-tag"),l=t.querySelector(".profile-signature"),r=document.getElementById("profile-tab-posts"),o=document.getElementById("profile-tab-ama"),s=document.getElementById("profile-tab-footprints"),d="user"===e||"{{user}}"===e?A:_.find(t=>t.id===e);if(!d){console.error(`[Forum Profile] Render failed: Cannot find contact with ID: ${e}`),i.textContent="用户不存在";return}let c="user"===d.id||"{{user}}"===d.id;a.src=ec(d.id),i.textContent=ed(d.id,null),l.textContent=d.signature||"这个人很懒，什么都没留下。";let m=O.posts.filter(e=>e.author===d.id||c&&"{{user}}"===e.author).length;n.textContent=`${m} 篇帖子`,r.innerHTML="";let p=O.posts.filter(e=>e.author===d.id||c&&"{{user}}"===e.author).sort((e,t)=>new Date(t.timestamp)-new Date(e.timestamp));p.length>0?p.forEach(e=>{let t=document.createElement("div");t.className="post-card",t.dataset.postId=e.postId;let a="",i=e.title||"无标题帖子",n=i.match(/^(?:\[|【)([^\]】]+)(?:\]|】)\s*(.*)$/);if(n){let l=n[1],o=n[2];a=`
+                    <span class="profile-post-prefix-tag">${l}</span>
+                    <span class="profile-post-title-text">${o}</span>
+                `}else a=`<span class="profile-post-title-text">${i}</span>`;let s=e.text||e.content||"",d=/#([^#\s]+)/g,c=[...new Set([...s.matchAll(d)].map(e=>e[1]))],m=c.length>0?`<div class="profile-post-hashtags">
+                    ${c.map(e=>`<span class="hashtag">#${e}</span>`).join("")}
+                </div>`:"",p=s.replace(d,"").trim(),u=(p||"(无正文内容)").substring(0,100)+(p.length>100?"...":"");t.innerHTML=`
+                <h3 class="title">${a}</h3>
+                <div class="profile-post-content">
+                    <p class="excerpt">${u}</p>
+                </div>
+                ${m} 
+                <div class="post-card-footer">
+                    <span class="timestamp">${eT(e.timestamp)}</span>
+                    <div class="post-card-stats" style="display: flex; gap: 0.8rem;">
+                        <span><i class="fas fa-share"></i> ${e.retweets||0}</span>
+                        <span><i class="far fa-comment-alt"></i> ${(O.comments[e.postId]||[]).length}</span>
+                        <span><i class="far fa-thumbs-up"></i> ${e.likes||0}</span>
+                    </div>
+                </div>
+            `,r.appendChild(t)}):r.innerHTML='<p style="text-align:center; color: var(--forum-text-secondary); padding: 2rem;">TA还没有发布过任何帖子。</p>';let u="user"===d.id||"{{user}}"===d.id;if(o.innerHTML="",u){let g=document.createElement("p");g.style.cssText="text-align:center; color: var(--forum-text-secondary); padding: 2rem;",g.textContent="这里是你的匿名提问箱。",o.appendChild(g)}else{let y=document.createElement("div");y.className="ama-input-box",y.innerHTML=`
+            <div class="ama-input-header">匿名向TA提问</div>
+            <div class="ama-input-body">
+                <textarea rows="2" placeholder="输入你的问题..."></textarea>
+            </div>
+            <div class="ama-input-footer">
+                <span id="view-more-ama-btn">🔍 查看更多</span>
+                <button><i class="fas fa-paper-plane"></i></button>
+            </div>
+        `,o.appendChild(y)}let f=document.createElement("div");if(f.className="ama-qna-list",o.appendChild(f),w){let h=w.logEntries.filter(t=>"AMA_PAIR"===t.key&&(t.data.author===e||c&&"{{user}}"===t.data.author)).sort((e,t)=>new Date(t.data.timestamp)-new Date(e.data.timestamp));if(u&&h.length>0){let b=o.querySelector("p");b&&(b.style.display="none")}h.forEach(e=>{let t=e.data,a=document.createElement("div");a.className="qna-card",a.innerHTML=`
+                <div class="question"><p>${t.question.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</p></div>
+                <div class="answer">
+                    <div class="answer-content">
+                        <p class="author">${ed(t.author,null)}</p>
+                        <p>${t.answer.replace(/\n/g,"<br>")}</p>
+                    </div>
+                </div>
+            `,f.appendChild(a)})}s.innerHTML="";let v=[];for(let E in O.comments)O.comments[E].forEach(e=>{(e.author===d.id||c&&"{{user}}"===e.author)&&v.push({...e,post:O.posts.find(e=>e.postId===E)})});v.sort((e,t)=>new Date(t.timestamp)-new Date(e.timestamp)),v.length>0?v.forEach(e=>{if(!e.post)return;let t=e.text,a=t.match(/\[引用:"(?:.*?):\s*(?:[\s\S]*?)"\]([\s\S]*)/);a&&a[1]&&(t=a[1].trim());let i=document.createElement("div");i.className="footprint-item",i.innerHTML=`
+                <div class="icon"><i class="far fa-comment-alt"></i></div>
+                <div class="content">
+                    <p class="action">
+                        在帖子
+                        <span class="post-link" data-post-id="${e.post.postId}">${e.post.title}</span>
+                        中发表了评论
+                    </p>
+                    <div class="quote">${t.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>
+                </div>
+            `,s.appendChild(i)}):s.innerHTML='<p style="text-align:center; color: var(--forum-text-secondary); padding: 2rem;">TA还没有发表过任何评论。</p>'}function eA(e){let t=O.posts.find(t=>t.postId===e);if(!t)return;let a=document.getElementById("weibo-detail-view"),i=a.querySelector(".weibo-detail-body"),n=a.querySelector(".weibo-detail-title");i.innerHTML="",J.clear(),n.textContent="";let r=t.author;void 0===t.likes&&(t.likes=Math.floor(1e3*Math.random())),void 0===t.retweets&&(t.retweets=Math.floor(51*Math.random())),void 0===t.bookmarks&&(t.bookmarks=Math.floor(21*Math.random()));let o=(t,a,i=!1,n=!1)=>{let o=e=>{let t=e.replace(/</g,"&lt;").replace(/>/g,"&gt;");return t.replace(/@([^\s@#]+)/g,(e,t)=>`<span class="mention" data-username="${t}">${e}</span>`)},s=t.author,d;if(void 0===t.likes&&(t.likes=Math.floor(10*Math.random())),"user"===s||"{{user}}"===s){let c=K(233);d={...A,name:ed("user"),avatar:ec("user"),postCount:233,title:c.text,titleColor:c.color}}else{let m=_.find(e=>e.id===s);if(m){let p=Math.floor(701*Math.random())+300,u=K(p);d={...m,name:ed(m.id),avatar:ec(m.id),postCount:p,title:u.text,titleColor:u.color}}else d=Z(s)}let g="",y=t.text||t.content||"";if(t.replyTo){let f=(O.comments[e]||[]).find(e=>e.commentId===t.replyTo),h;if(f){let b=ed(f.author,null),v=f.text;h=`<div class="forum-quote-block"><div class="quote-author">@${b}</div><div class="quote-content">${v.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div></div>`}else h=`<div class="forum-quote-block"><div class="quote-content">[原消息已删除]</div></div>`;let w=o(y);g=h+w}else{let E=y.match(/\[引用:"(.*?):\s*([\s\S]*?)"\]([\s\S]*)/);if(E){let I=E[1].trim(),x=E[2].trim(),$=E[3].trim(),L=`<div class="forum-quote-block"><div class="quote-author">${o("@"+I)}</div><div class="quote-content">${x.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div></div>`,k=o($);g=L+k}else g=o(y)}let T="";if(t.image&&t.image_type){let S="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-top: 0.8rem; display: block;";if("url"===t.image_type)T=`<img src="${t.image}" class="post-media-image" style="${S}">`;else if("desc"===t.image_type){let B=l(t.commentId||t.postId,t.image);T=B?`<div style="${S} overflow: hidden; position: relative;">${B}</div>`:`<div class="forum-image-description">${t.image.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>`}}let D=document.createElement("div");D.className=i?"forum-post-card is-op":n?"forum-post-card is-image-attachment":"forum-post-card",D.dataset.commentId=t.commentId||"post-op",D.dataset.authorName=d.name;let C=!1===t.isRead?'<div class="unread-indicator"></div>':"";if(i){let M=`
 				<div class="forum-user-panel">
 					<img src="${d.avatar}" alt="${d.name}" class="forum-user-avatar">
 					<div class="op-user-info-wrapper">
