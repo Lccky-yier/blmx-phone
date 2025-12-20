@@ -1116,7 +1116,64 @@ FORUM_THREAD:{"title":"[求助] 暗恋了很久的朋友突然要结婚了，怎
 FORUM_THREAD:{"title":"[分享] 楼下的猫又在吵架，录下来了好好笑。","author":"喵喵观察员","isPinned":false,"hotness":23}
 
 [你的指令]
-现在，请严格遵循以上格式和示例，为【${a}】分区生成初始的帖子列表。`;return n.trim()}(e);if(!t){b=!1,eX();return}N=t;try{let a=await v({user_input:t,should_stream:!1});(M=a.trim())&&await ao(M,{contextCategory:e})}catch(i){console.error("[BLMX Forum] AI initial feed generation failed:",i),await showDialog({mode:"alert",text:`AI生成初始帖子列表失败: ${i.message}`})}finally{b=!1,eX()}}async function ac(e){if(b){console.warn("[BLMX Forum] AI is already generating. Aborting full post generation.");return}let t=O.posts.find(t=>t.postId===e);if(!t)return;console.log(`[BLMX Forum] Triggering full post generation for postId: ${e}`),b=!0,eX();let a=getFullPostPrompt(e);if(!a){b=!1,eX();return}N=a,await showDialog({mode:"alert",text:"AI正在撰写帖子内容和评论，请稍候..."});try{let i=await v({user_input:a,should_stream:!1});(M=i.trim())&&await ao(M,{contextCategory:t.category,contextPostId:e})}catch(n){console.error("[BLMX Forum] AI full post generation failed:",n),await showDialog({mode:"alert",text:`AI生成帖子内容失败: ${n.message}`})}finally{b=!1,eX()}}async function am(e){if(b||!w||!v){console.warn("[BLMX Weibo] AI is already generating or essential functions are missing. Aborting.");return}console.log(`[BLMX Weibo] Triggering AI response for post: ${e}`),b=!0,eX();let t=function e(t){let a=O.posts.find(e=>e.postId===t);if(!a)return null;let i=`
+现在，请严格遵循以上格式和示例，为【${a}】分区生成初始的帖子列表。`;return n.trim()}(e);if(!t){b=!1,eX();return}N=t;try{let a=await v({user_input:t,should_stream:!1});(M=a.trim())&&await ao(M,{contextCategory:e})}catch(i){console.error("[BLMX Forum] AI initial feed generation failed:",i),await showDialog({mode:"alert",text:`AI生成初始帖子列表失败: ${i.message}`})}finally{b=!1,eX()}}async function ac(e){if(b){console.warn("[BLMX Forum] AI is already generating. Aborting full post generation.");return}let t=O.posts.find(t=>t.postId===e);if(!t)return;console.log(`[BLMX Forum] Triggering full post generation for postId: ${e}`),b=!0,eX();let a=function e(t){let a=O.posts.find(e=>e.postId===t);if(!a)return console.error(`[BLMX Forum] 无法为帖子 ${t} 创建上下文，帖子未找到。`),null;let i=document.querySelector(`.weibo-zone-card[data-category="${a.category}"] .zone-title`).textContent,n=ej(a.category),l="",r="";"fanfic"===a.category?(l="正文若为有情节、有细节的短篇故事或章节请适量长一点，若为CP讨论或社交可以适量短一点。",r=`* **【正文内容核心要求】**:
+			* **分段要求**: 正文内容 **必须** 包含至少2-3个自然段落，段落之间使用 **一个换行符 (\\n)** 分隔。`):(l="正文内容应简洁明了，抓住核心，模拟真实社交平台的快节奏分享。建议长度在0-200字符之间。",r="");let o=`
+			[任务: 活化这个帖子]
+			
+			* **【最高优先级：核心禁令】**:
+			1. **人设严格遵守 (OOC禁令)**: 在扮演任何核心角色 (char) 发表评论前，你 **必须** 深入思考该角色的性格和背景。 **绝对禁止** 做出任何不符合角色人设的行为（OOC）。
+			2. **用户身份禁令**: 用户的ID是 '{{user}}'。你 **绝对禁止** 以 '{{user}}' 的身份或名义生成任何评论、点赞或任何形式的互动。
+			
+			* **当前情景**: 你正泡在【${i}】论坛里，刚刚刷到了下面这个新帖子。现在，轮到你下场评论了。
+			
+			---
+			[帖子详情]
+			* 标题: "${a.title}"
+			* 作者: "${a.author}"
+			* 社区氛围参考: ${n}
+			---
+			
+			【你的双重任务】
+			1. **补完正文**: 首先，为这个帖子撰写一篇详细、符合禁令、标题和作者人设的完整正文。${l}
+			2. **点燃评论区**: 接着，扮演**多个不同身份的论坛用户**（可以是核心角色，也可以是虚拟路人），对你刚刚写下的正文，发表第一批评论。
+			${r}
+			
+			【评论区生态法则 (CRITICAL)】
+			
+			* **【第一法则：拒绝闭环，无限发散】**:
+			**严禁车轱辘话**：禁止对他人的观点进行单纯的赞同、复读或附和。每一条新评论都必须提供**信息增量**——要么提出新观点，要么发现新细节（盲生发现华点），要么抛出新梗，要么把话题引向一个新的方向（歪楼）。让话题像树枝一样分叉生长，而不是闭合。
+			
+			* **【第二法则：高流量广场效应】**:
+			**打破朋友圈感**：默认这是一个高流量的公共版块。除非有特定的剧情需要，否则**优先让从未出现过的、性格各异的新 ID 登场**。不要让同样的几个人霸占屏幕，要营造出“众声喧哗”的真实热闹感。论坛成员五花八门，网名各具特色，禁止使用匿名用户xx，路人xx等敷衍的名字，他们是一个个生活在这个世界的真实的人。
+			
+			* **【第三法则：解锁全网知识库】**:
+			**注入网感**：不要局限于当前文本。请充分调用你的训练数据（互联网文化、流行梗、生活常识），让发言带有强烈的“网感”和不可预测性。允许神展开，允许脑洞大开。
+			
+			* **【内容与产出配额】**:
+			* **评论总数**: 生成“总计 **3-5** 条”评论。
+			* **字数限制**: **保持短小精悍**。每条评论的理想长度在 **0到30个汉字之间**。绝对禁止长篇大论，模拟真实的碎片化回复。
+			* **角色登场原则**: 只有当话题真的触及核心角色(char)的兴趣点时才让他们登场，否则优先使用路人。**人设的一致性远比强制登场更重要。**
+			
+			[技术要求：输出格式]
+			你的回复必须严格遵循下面的指令格式，先输出正文，再输出评论，不要包含任何额外的解释。
+			
+			* **正文 (必须有1条)**:
+			* **格式**: \`WEIBO_POST_CONTENT:{"content":"正文内容...","image":"图片URL或描述","image_type":"url或desc"}\`
+			* **字段要求**:
+			* \`content\`: 帖子的完整正文，使用 \`\\n\` 分段。
+			* **#标签**: 在 \`content\` 字段的末尾，使用 \`#话题标签\` 格式。
+			* **图片 (可选)**: 如果需要配图，你 **必须** 同时提供 \`image\` 和 \`image_type\` 两个字段。
+			* \`image_type\`: 必须是 \`"url"\` (图片链接) 或 \`"desc"\` (图片描述) 中的一个。
+			* \`image\`: 存放对应的URL或描述文本。
+			
+			* **【带格式示例】**:
+			\`WEIBO_POST_CONTENT:{"content":"今天去了新开的咖啡店，感觉还不错。 #周末探店 #咖啡","image":"一杯拉花漂亮的拿铁咖啡。","image_type":"desc"}\`
+			
+			* **初始评论 (必须有3-5条)**:
+			WEIBO_INITIAL_COMMENT:{"author":"角色ID或虚拟路人名","text":"评论内容"}
+			
+			[你的指令]
+			现在，请沉浸到这个论坛里，严格遵循以上所有规则，开始你的创作。`;return o.trim()}(e);if(!a){b=!1,eX();return}N=a,await showDialog({mode:"alert",text:"AI正在撰写帖子内容和评论，请稍候..."});try{let i=await v({user_input:a,should_stream:!1});(M=i.trim())&&await ao(M,{contextCategory:t.category,contextPostId:e})}catch(n){console.error("[BLMX Forum] AI full post generation failed:",n),await showDialog({mode:"alert",text:`AI生成帖子内容失败: ${n.message}`})}finally{b=!1,eX()}}async function am(e){if(b||!w||!v){console.warn("[BLMX Weibo] AI is already generating or essential functions are missing. Aborting.");return}console.log(`[BLMX Weibo] Triggering AI response for post: ${e}`),b=!0,eX();let t=function e(t){let a=O.posts.find(e=>e.postId===t);if(!a)return null;let i=`
 * **【最高优先级：核心禁令】**:
 1. **人设严格遵守 (OOC禁令)**: 在扮演任何核心角色 (char) 发表评论前，你 **必须** 深入思考该角色的性格和背景。 **绝对禁止** 做出任何不符合角色人设的行为（OOC）。
 2. **用户身份禁令**: 用户的ID是 '{{user}}'。你 **绝对禁止** 以 '{{user}}' 的身份或名义生成任何评论、点赞或任何形式的互动。`,n=ej(a.category),l=`
