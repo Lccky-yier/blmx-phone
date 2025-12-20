@@ -1265,8 +1265,7 @@ ${n}`,r=`
 
 2.  **画面 (使用指令):**
     *   这里用来展示 **{{user}} 能看到的一切**：你的动作、表情、以及你周围的环境。
-    *   使用 \`UPDATE_CALL_SCREEN:{"type":"description", "value":"画面描述"${isNaiEnabled?',"ai_prompt":"用于绘图AI的英文Tag"':""}}\` 指令来更新这个画面。
-    ${isNaiEnabled?"* **注意**: 由于绘图插件已开启，请务必提供 ai_prompt 字段，必须遵循 NovelAI (NAI Diffusion) 格式，生动地描述场景，包括构图、光照和情感细节。反映情节和角色特征，以创建与叙事一致的视觉效果惊艳的图像。":""}
+    *   使用 \`UPDATE_CALL_SCREEN:{"type":"description", "value":"画面描述"}\` 指令来更新这个画面。
 
 3.  **挂断电话 (使用指令 - NEW):**
     *   当你（角色）因为任何原因（聊完了、生气了、有急事等）想要主动结束通话时，使用此指令。
