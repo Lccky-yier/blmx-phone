@@ -762,21 +762,25 @@ ${n}
 <i class="fas fa-map-marker-alt fp-realtime-icon"></i>
 <div class="fp-realtime-label">${e.current_location}</div>
 `,a.appendChild(i)}if(!e.items||0===e.items.length){t.innerHTML='<p style="text-align:center;padding-top:2rem;color:#999;">点击下方按钮刷新行踪</p>';return}e.items.forEach(e=>{let a=document.createElement("div");a.className="fp-item-row",a.innerHTML=`
-<div class="fp-node"></div>
-<div class="fp-timestamp">${e.time.split("-")[0].trim()}</div>
-<div class="fp-card">
-	<div class="fp-title">${e.title}</div>
-	<div class="fp-detail-item">
-		<i class="fas fa-location-dot"></i> 地点：${e.location}
+<div class="fp-left-zone">
+	<div class="fp-node"></div>
+</div>
+<div class="fp-right-zone">
+	<div class="fp-timestamp">${e.time.split("-")[0].trim()}</div>
+	<div class="fp-card">
+		<div class="fp-title">${e.title}</div>
+		<div class="fp-detail-item">
+			<i class="fas fa-location-dot"></i> 地点：${e.location}
+		</div>
+		<div class="fp-detail-item">
+			<i class="far fa-clock"></i> 停留：${e.duration||"未知"}
+		</div>
+		<div class="fp-tips">
+			<div class="fp-tips-tag">Tips</div>
+			<div class="fp-tips-text">${e.event}</div>
+		</div>
+		<button class="fp-sync-btn">同步位置到微信</button>
 	</div>
-	<div class="fp-detail-item">
-		<i class="far fa-clock"></i> 停留：${e.duration||"未知"}
-	</div>
-	<div class="fp-tips">
-		<div class="fp-tips-tag">Tips</div>
-		<div class="fp-tips-text">${e.event}</div>
-	</div>
-	<button class="fp-sync-btn">同步位置到微信</button>
 </div>
 `;let i=a.querySelector(".fp-sync-btn");i.addEventListener("click",async t=>{t.stopPropagation();let a=ed(B,null),n=C.find(e=>"single"===e.type&&e.members.includes(B));if(n){let l=`[系统：${a}目前正在${e.location}。${e.event}]`,r={type:"event_log",content:{convoId:n.id,timestamp:new Date().toISOString(),description:l}};w.addEntry(r),await w.persistLogToStorage(),i.textContent="已同步 ✓",i.style.borderColor="#ccc",i.style.color="#999",i.disabled=!0,em(n.id,"行踪已同步",`${a} 已感知到当前位置`)}}),t.appendChild(a)})}async function t2(e){if(b)return;let t=document.getElementById("cp-footprints-list");t.innerHTML=`
 <div class="nai-loading-placeholder" style="margin-top: 5rem;">
