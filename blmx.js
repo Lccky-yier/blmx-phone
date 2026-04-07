@@ -2872,7 +2872,7 @@ Now, please begin.
 							`<div class="status-text">${transferData.status === 'accepted' ? '已接收' : '已退还'}</div>` :
 							`${recipientNote}<div class="note">${transferData.note || ' '}</div>`;
 						const cardClass = isReceipt ? 'transfer-receipt' : 'transfer-initial';
-						bubbleHtml = `<div class="transfer-card ${cardClass}"><div class="transfer-content"><img src="https://i.postimg.cc/hvCbcFq9/y8059q.png" class="transfer-icon-image"><div class="transfer-details"><div class="amount">¥${transferData.amount}</div>${detailsHtml}</div></div><div class="transfer-footer">转账</div></div>`;
+						bubbleHtml = `<div class="transfer-card ${cardClass}"><div class="transfer-content"><i class="fas fa-exchange-alt transfer-icon"></i><div class="transfer-details"><div class="amount">¥${transferData.amount}</div>${detailsHtml}</div></div><div class="transfer-footer">转账</div></div>`;
 						bubbleClasses += ' transfer-bubble';
 						break;
 					}
