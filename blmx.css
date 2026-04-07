@@ -1532,11 +1532,11 @@
 			display: inline-flex;
 			align-items: center;
 			justify-content: center;
-			width: 2rem;
-			height: 2rem;
-			border: 1px solid var(--transfer-initial-text);
+			width: 2.25rem;
+			height: 2.25rem;
+			border: 1.5px solid var(--transfer-initial-text);
 			border-radius: 50%;
-			font-size: 0.9rem;
+			font-size: 1rem;
 			color: var(--transfer-initial-text);
 			background-color: transparent;
 			flex-shrink: 0;
