@@ -1,4 +1,4 @@
-	
+
 		@import url("https://fontsapi.zeoseven.com/285/main/result.css");
 		@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css');
 		
@@ -1528,9 +1528,11 @@
 			padding: 0.75rem;
 		}
 		
-		.transfer-icon-image {
+		.transfer-icon {
+			font-size: 2.2rem;
 			width: 2.25rem;
-			height: 2.25rem;
+			text-align: center;
+			color: inherit;
 			flex-shrink: 0;
 		}
 		
@@ -7906,7 +7908,6 @@
 			border-radius: 0 !important;
 			width: 100vw !important;
 			max-width: 100vw !important;
-			/* 改用百分比配合 position 强制锁定 */
 			height: 100% !important;
 			position: fixed !important;
 			top: 0 !important;
@@ -7923,7 +7924,6 @@
 			width: 100% !important;
 			max-height: 100% !important;
 			border: none !important;
-			/* 彻底移除黑边线 */
 			border-radius: 0 !important;
 			margin: 0 !important;
 		}
