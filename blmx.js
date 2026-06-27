@@ -51,7 +51,9 @@ ${c}
 *注意：所有指令中的时间戳格式必须为 \`YYYY-MM-DDTHH:mm\`*
 
 1.  **[时间与叙事]**
-    * \`EVENT_LOG:{"convoId": "目标对话ID", "timestamp":"YYYY-MM-DDTHH:mm", "description":"可选，简述此期间发生的事件。"}\`
+    *   **用途**: 
+      **记录时间并推进“线下”剧情**，表现角色在聊天界面之外正在做什么。
+    * \`EVENT_LOG:{"convoId": "目标对话ID", "timestamp":"YYYY-MM-DDTHH:mm", "description":"可选，对此期间发生的线下事件的简短描述。"}\`
 
 2.  **[角色通用行为]**
     *   \`SIGNATURE_UPDATE:{"author":"角色ID","signature":"新的个性签名"}\`
